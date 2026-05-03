@@ -13,16 +13,16 @@ const BACK_BUTTON_ID = "help-back-to-main";
 const ALL_COMMANDS_ID = "help-all-commands";
 const PAGINATION_PREFIX = "help-page";
 const CATEGORY_SELECT_ID = "help-category-select";
-const FOOTER_TEXT = "Made with ❤️";
+const FOOTER_TEXT = "Made by Iyong Official";
 const SUBCOMMAND_TYPE = 1;
 const SUBCOMMAND_GROUP_TYPE = 2;
 
 const CATEGORY_ICONS = {
-    Core: "ℹ️",
-    Moderation: "🛡️",
-    Economy: "💰",
-    Fun: "🎮",
-    Leveling: "📊",
+    Token: "ℹ️",
+    Pets: "🛡️",
+    Fruit: "💰",
+    Mutation: "🎮",
+    KG: "📊",
     Utility: "🔧",
     Ticket: "🎫",
     Welcome: "👋",
