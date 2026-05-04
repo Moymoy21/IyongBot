@@ -1,19 +1,4 @@
-import {
-  helpBackButton,
-  helpBugReportButton,
-  helpPaginationButton,
-} from '../../handlers/helpButtons.js';
+// Inalis na ang mga imports mula sa helpButtons.js dahil pinagsama na ang logic sa helpSelectMenus.js
+// Pinananatiling empty array ang export para hindi mag-error ang handler loader ng bot.
 
-const paginationIds = [
-  'help-page_first',
-  'help-page_prev',
-  'help-page_next',
-  'help-page_last',
-];
-
-const paginationInteractions = paginationIds.map((name) => ({
-  name,
-  execute: helpPaginationButton.execute,
-}));
-
-export default [helpBackButton, helpBugReportButton, ...paginationInteractions];
+export default [];
