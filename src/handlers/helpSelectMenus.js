@@ -4,7 +4,6 @@ import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { 
-    Collection, 
     ActionRowBuilder, 
     ModalBuilder, 
     TextInputBuilder, 
@@ -17,7 +16,6 @@ const __dirname = path.dirname(__filename);
 
 const BACK_BUTTON_ID = "help-back-to-main";
 const ALL_COMMANDS_ID = "help-all-commands";
-const PAGINATION_PREFIX = "help-page";
 const CATEGORY_SELECT_ID = "help-category-select";
 const FOOTER_TEXT = "Made with Iyong Official";
 const SUBCOMMAND_TYPE = 1;
@@ -36,8 +34,7 @@ const CATEGORY_ICONS = {
     Utility: "🛠️"
 };
 
-const ALLOWED_CATEGORIES = ["economy", "createboot", "utility"];
-
+// --- HELPER PARA SA PET PAGE ---
 export function createPetPage(index) {
     const pet = PET_IMAGES[index];
     const embed = createEmbed({
@@ -91,78 +88,99 @@ function buildHelpEntries(command, category) {
     return entries;
 }
 
+// --- MODIFIED CATEGORY MENU ---
 async function createCategoryCommandsMenu(category, client) {
-    if (category.toLowerCase() === 'createboot') return createPetPage(0);
+    // 1. SHORTCUT: Kapag 'createboot' (Pets), agad ibalik ang Pet Page.
+    if (category.toLowerCase() === 'createboot') {
+        return createPetPage(0);
+    }
+
+    // 2. DEFAULT: Logic para sa ibang folders
     const categoryName = category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
     const icon = CATEGORY_ICONS[categoryName] || "🔍";
     const categoryCommands = [];
+
     try {
-        const categoryPath = path.join(__dirname, "../commands", category);
+        // Inaayos ang path para mahanap ang commands folder
+        const categoryPath = path.resolve(__dirname, "../../commands", category);
         const commandFiles = (await fs.readdir(categoryPath)).filter((file) => file.endsWith(".js")).sort();
+        
         for (const file of commandFiles) {
             const commandModule = await import(`file://${path.join(categoryPath, file)}`);
-            if (normalizeCommandData(commandModule.default)) categoryCommands.push(...buildHelpEntries(commandModule.default, categoryName));
+            if (normalizeCommandData(commandModule.default)) {
+                categoryCommands.push(...buildHelpEntries(commandModule.default, categoryName));
+            }
         }
-    } catch (error) { logger.error(error); }
-    const embed = createEmbed({ title: `${icon} ${categoryName} Commands`, description: categoryCommands.length > 0 ? `List of commands:` : `No commands found.`, color: 'primary' });
-    if (categoryCommands.length > 0) embed.addFields({ name: "Commands", value: categoryCommands.map(cmd => `\`/${cmd.displayName}\` · ${cmd.description}`).join("\n").substring(0, 1024) });
+    } catch (error) {
+        logger.error(`Category folder error [${category}]:`, error);
+    }
+
+    const embed = createEmbed({ 
+        title: `${icon} ${categoryName} Commands`, 
+        description: categoryCommands.length > 0 ? `List of commands:` : `No commands found.`, 
+        color: 'primary' 
+    });
+
+    if (categoryCommands.length > 0) {
+        embed.addFields({ 
+            name: "Commands", 
+            value: categoryCommands.map(cmd => `\`/${cmd.displayName}\` · ${cmd.description}`).join("\n").substring(0, 1024) 
+        });
+    }
+
     embed.setFooter({ text: FOOTER_TEXT });
-    return { embeds: [embed], components: [new ActionRowBuilder().addComponents(createButton(BACK_BUTTON_ID, "Back", "primary", "⬅️", false))] };
+    const row = new ActionRowBuilder().addComponents(createButton(BACK_BUTTON_ID, "Back", "primary", "⬅️", false));
+
+    return { embeds: [embed], components: [row] };
 }
 
 export async function createAllCommandsMenu(page = 1, client) {
-    const embed = createEmbed({ title: "📋 All Commands", description: "This feature is under maintenance." });
+    const embed = createEmbed({ title: "📋 All Commands", description: "This feature is currently being updated.", color: 'primary' });
     embed.setFooter({ text: FOOTER_TEXT });
-    return { embeds: [embed], components: [new ActionRowBuilder().addComponents(createButton(BACK_BUTTON_ID, "Back", "primary", "⬅️", false))] };
+    return { embeds: [embed], components: [new ActionRowBuilder().addComponents(createButton(BACK_BUTTON_ID, "Back", "primary", "🏠", false))] };
 }
 
+// --- MAIN HANDLER ---
 export const helpCategorySelectMenu = {
     name: CATEGORY_SELECT_ID,
     async execute(interaction, client) {
         try {
+            // SELECT MENU
             if (interaction.isStringSelectMenu()) {
                 await interaction.deferUpdate();
                 const selected = interaction.values[0];
-                const { embeds, components } = selected === ALL_COMMANDS_ID 
+                
+                const result = selected === ALL_COMMANDS_ID 
                     ? await createAllCommandsMenu(1, client) 
                     : await createCategoryCommandsMenu(selected, client);
-                await interaction.editReply({ embeds, components });
+
+                return await interaction.editReply({ embeds: result.embeds, components: result.components });
             } 
             
+            // BUTTONS
             else if (interaction.isButton()) {
                 const customId = interaction.customId;
 
-                // 📝 MODAL TRIGGER
+                // 📝 MODAL: EDIT DETAILS
                 if (customId.startsWith('pet-edit-')) {
                     const index = parseInt(customId.split('-')[2]);
                     const modal = new ModalBuilder()
                         .setCustomId(`pet-modal-${index}`)
                         .setTitle(`Edit: ${PET_IMAGES[index].name}`);
 
-                    const ageInput = new TextInputBuilder()
-                        .setCustomId('pet-age').setLabel("Enter Age").setStyle(TextInputStyle.Short).setRequired(true);
+                    const fields = [
+                        new TextInputBuilder().setCustomId('pet-age').setLabel("Age").setStyle(TextInputStyle.Short).setRequired(true),
+                        new TextInputBuilder().setCustomId('pet-weight').setLabel("Weight").setStyle(TextInputStyle.Short).setRequired(true),
+                        new TextInputBuilder().setCustomId('pet-token').setLabel("Token Price").setStyle(TextInputStyle.Short).setRequired(true),
+                        new TextInputBuilder().setCustomId('pet-mutation').setLabel("Mutation").setPlaceholder("e.g. Rare, Shiny").setStyle(TextInputStyle.Short).setRequired(true)
+                    ];
 
-                    const weightInput = new TextInputBuilder()
-                        .setCustomId('pet-weight').setLabel("Enter Weight").setStyle(TextInputStyle.Short).setRequired(true);
-
-                    const tokenInput = new TextInputBuilder()
-                        .setCustomId('pet-token').setLabel("Enter Token Price").setStyle(TextInputStyle.Short).setRequired(true);
-
-                    const mutationInput = new TextInputBuilder()
-                        .setCustomId('pet-mutation').setLabel("Enter Pet Mutation").setPlaceholder("e.g. Rare, Shiny").setStyle(TextInputStyle.Short).setRequired(true);
-
-                    modal.addComponents(
-                        new ActionRowBuilder().addComponents(ageInput),
-                        new ActionRowBuilder().addComponents(weightInput),
-                        new ActionRowBuilder().addComponents(tokenInput),
-                        new ActionRowBuilder().addComponents(mutationInput)
-                    );
-
-                    await interaction.showModal(modal);
+                    modal.addComponents(fields.map(f => new ActionRowBuilder().addComponents(f)));
+                    return await interaction.showModal(modal);
                 }
                 
                 // ⬅️ / ➡️ NAVIGATION
-                else if (customId.startsWith('pet-prev-') || customId.startsWith('pet-next-')) {
+                if (customId.startsWith('pet-prev-') || customId.startsWith('pet-next-')) {
                     await interaction.deferUpdate();
                     const parts = customId.split('-');
                     let index = parseInt(parts[2]);
@@ -170,11 +188,17 @@ export const helpCategorySelectMenu = {
                     if (parts[1] === 'prev') index--;
 
                     const { embeds, components } = createPetPage(index);
-                    await interaction.editReply({ embeds, components });
+                    return await interaction.editReply({ embeds, components });
+                }
+
+                // 🏠 BACK TO MAIN
+                if (customId === BACK_BUTTON_ID) {
+                    // Dito mo ilalagay yung original Main Help Embed mo kung meron man.
+                    // For now, i-reply natin ang success or update as needed.
                 }
             }
         } catch (error) {
-            logger.error('Error in help interaction:', error);
+            logger.error('Help interaction error:', error);
         }
     },
 };
