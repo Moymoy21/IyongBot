@@ -26,8 +26,8 @@ const SUBCOMMAND_GROUP_TYPE = 2;
 // --- DATA NG MGA PETS ---
 const PET_IMAGES = [
     { name: "Dilophosaurus", url: "https://static.wikia.nocookie.net/growagarden/images/3/3c/Dilophosaurus.png/revision/latest?cb=20250712071322" },
-    { name: "Peryton", url: "https://static.wikia.nocookie.net/growagarden/images/2/26/PerytonPet.png/revision/latest?cb=20260416073019" }, // Palitan ang link
-    { name: "Kitsune", url: "https://static.wikia.nocookie.net/growagarden/images/0/04/Kitsune.png/revision/latest?cb=20250918145223" } // Palitan ang link
+    { name: "Peryton", url: "https://static.wikia.nocookie.net/growagarden/images/2/26/PerytonPet.png/revision/latest?cb=20260416073019" },
+    { name: "Kitsune", url: "https://static.wikia.nocookie.net/growagarden/images/0/04/Kitsune.png/revision/latest?cb=20250918145223" }
 ];
 
 const CATEGORY_ICONS = {
@@ -38,11 +38,10 @@ const CATEGORY_ICONS = {
 
 const ALLOWED_CATEGORIES = ["economy", "createboot", "utility"];
 
-// --- HELPER PARA SA PET PAGINATION ---
 export function createPetPage(index) {
     const pet = PET_IMAGES[index];
     const embed = createEmbed({
-        title: `🐾 ${pet.name}`, // Label Name sa taas
+        title: `🐾 ${pet.name}`,
         color: 'primary'
     });
     embed.setImage(pet.url);
@@ -51,11 +50,19 @@ export function createPetPage(index) {
     const row = new ActionRowBuilder().addComponents(
         createButton(`pet-prev-${index}`, "", "secondary", "⬅️", index === 0),
         createButton(`pet-next-${index}`, "", "secondary", "➡️", index === PET_IMAGES.length - 1),
-        createButton(`pet-edit-${index}`, "Edit Details", "success", "📝", false), // Button para sa Modal
+        createButton(`pet-edit-${index}`, "Edit Details", "success", "📝", false),
         createButton(BACK_BUTTON_ID, "Back", "primary", "🏠", false)
     );
 
     return { embeds: [embed], components: [row] };
+}
+
+function normalizeCommandData(command) {
+    const rawData = command?.data;
+    if (!rawData) return null;
+    const jsonData = typeof rawData.toJSON === 'function' ? rawData.toJSON() : rawData;
+    if (!jsonData?.name) return null;
+    return { ...jsonData, options: Array.isArray(jsonData.options) ? jsonData.options.map((opt) => typeof opt?.toJSON === 'function' ? opt.toJSON() : opt) : [] };
 }
 
 function buildHelpEntries(command, category) {
@@ -84,14 +91,6 @@ function buildHelpEntries(command, category) {
     return entries;
 }
 
-function normalizeCommandData(command) {
-    const rawData = command?.data;
-    if (!rawData) return null;
-    const jsonData = typeof rawData.toJSON === 'function' ? rawData.toJSON() : rawData;
-    if (!jsonData?.name) return null;
-    return { ...jsonData, options: Array.isArray(jsonData.options) ? jsonData.options.map((opt) => typeof opt?.toJSON === 'function' ? opt.toJSON() : opt) : [] };
-}
-
 async function createCategoryCommandsMenu(category, client) {
     if (category.toLowerCase() === 'createboot') return createPetPage(0);
     const categoryName = category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
@@ -112,15 +111,15 @@ async function createCategoryCommandsMenu(category, client) {
 }
 
 export async function createAllCommandsMenu(page = 1, client) {
-    // ... (Code for All Commands Menu remains same as your original)
+    const embed = createEmbed({ title: "📋 All Commands", description: "This feature is under maintenance." });
+    embed.setFooter({ text: FOOTER_TEXT });
+    return { embeds: [embed], components: [new ActionRowBuilder().addComponents(createButton(BACK_BUTTON_ID, "Back", "primary", "⬅️", false))] };
 }
 
-// --- MAIN INTERACTION HANDLER ---
 export const helpCategorySelectMenu = {
     name: CATEGORY_SELECT_ID,
     async execute(interaction, client) {
         try {
-            // 1. SELECT MENU HANDLER
             if (interaction.isStringSelectMenu()) {
                 await interaction.deferUpdate();
                 const selected = interaction.values[0];
@@ -130,49 +129,39 @@ export const helpCategorySelectMenu = {
                 await interaction.editReply({ embeds, components });
             } 
             
-            // 2. BUTTON HANDLER
             else if (interaction.isButton()) {
                 const customId = interaction.customId;
 
-                // TRIGGER MODAL (No deferUpdate here!)
-               // TRIGGER MODAL (Sa loob ng helpCategorySelectMenu.execute)
-if (customId.startsWith('pet-edit-')) {
-    const index = customId.split('-')[2];
-    const modal = new ModalBuilder()
-        .setCustomId(`pet-modal-${index}`)
-        .setTitle(`Details for ${PET_IMAGES[index].name}`);
+                // 📝 MODAL TRIGGER
+                if (customId.startsWith('pet-edit-')) {
+                    const index = parseInt(customId.split('-')[2]);
+                    const modal = new ModalBuilder()
+                        .setCustomId(`pet-modal-${index}`)
+                        .setTitle(`Edit: ${PET_IMAGES[index].name}`);
 
-    // --- MGA INPUT FIELDS ---
-    const ageInput = new TextInputBuilder()
-        .setCustomId('pet-age').setLabel("Enter Age").setStyle(TextInputStyle.Short).setRequired(true);
+                    const ageInput = new TextInputBuilder()
+                        .setCustomId('pet-age').setLabel("Enter Age").setStyle(TextInputStyle.Short).setRequired(true);
 
-    const weightInput = new TextInputBuilder()
-        .setCustomId('pet-weight').setLabel("Enter Weight").setStyle(TextInputStyle.Short).setRequired(true);
+                    const weightInput = new TextInputBuilder()
+                        .setCustomId('pet-weight').setLabel("Enter Weight").setStyle(TextInputStyle.Short).setRequired(true);
 
-    const tokenInput = new TextInputBuilder()
-        .setCustomId('pet-token').setLabel("Enter Token Price").setStyle(TextInputStyle.Short).setRequired(true);
+                    const tokenInput = new TextInputBuilder()
+                        .setCustomId('pet-token').setLabel("Enter Token Price").setStyle(TextInputStyle.Short).setRequired(true);
 
-    // BAGONG FIELD: PET MUTATION
-    const mutationInput = new TextInputBuilder()
-        .setCustomId('pet-mutation')
-        .setLabel("Enter Pet Mutation")
-        .setPlaceholder("e.g. Rare, Shiny, Albino")
-        .setStyle(TextInputStyle.Short)
-        .setRequired(true);
+                    const mutationInput = new TextInputBuilder()
+                        .setCustomId('pet-mutation').setLabel("Enter Pet Mutation").setPlaceholder("e.g. Rare, Shiny").setStyle(TextInputStyle.Short).setRequired(true);
 
-    // Idagdag lahat sa modal
-    modal.addComponents(
-        new ActionRowBuilder().addComponents(ageInput),
-        new ActionRowBuilder().addComponents(weightInput),
-        new ActionRowBuilder().addComponents(tokenInput),
-        new ActionRowBuilder().addComponents(mutationInput) // Nadagdag dito
-    );
+                    modal.addComponents(
+                        new ActionRowBuilder().addComponents(ageInput),
+                        new ActionRowBuilder().addComponents(weightInput),
+                        new ActionRowBuilder().addComponents(tokenInput),
+                        new ActionRowBuilder().addComponents(mutationInput)
+                    );
 
-    await interaction.showModal(modal);
-}
-
+                    await interaction.showModal(modal);
+                }
                 
-                // SLIDE NAVIGATION (Left/Right)
+                // ⬅️ / ➡️ NAVIGATION
                 else if (customId.startsWith('pet-prev-') || customId.startsWith('pet-next-')) {
                     await interaction.deferUpdate();
                     const parts = customId.split('-');
