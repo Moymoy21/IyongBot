@@ -1,5 +1,5 @@
 import { createEmbed } from '../utils/embeds.js';
-import { createButton, getPaginationRow } from '../utils/components.js';
+import { createButton } from '../utils/components.js';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -21,6 +21,7 @@ const FOOTER_TEXT = "Made with Iyong Official";
 const SUBCOMMAND_TYPE = 1;
 const SUBCOMMAND_GROUP_TYPE = 2;
 
+// --- DATA NG MGA PETS ---
 const PET_IMAGES = [
     { name: "Dilophosaurus", url: "https://static.wikia.nocookie.net/growagarden/images/3/3c/Dilophosaurus.png/revision/latest?cb=20250712071322" },
     { name: "Peryton", url: "https://static.wikia.nocookie.net/growagarden/images/2/26/PerytonPet.png/revision/latest?cb=20260416073019" },
@@ -36,6 +37,7 @@ const CATEGORY_ICONS = {
     Community: "👥"
 };
 
+// --- HELPER PARA SA PET PAGE ---
 export function createPetPage(index) {
     const pet = PET_IMAGES[index];
     const embed = createEmbed({
@@ -81,10 +83,14 @@ function buildHelpEntries(command, category) {
     return entries;
 }
 
+// --- ITO ANG PINAKAMAHALAGANG PART ---
 async function createCategoryCommandsMenu(category, client) {
-    // 1. CLEAN SHORTCUT CHECK
-    const cleanCategory = category.toLowerCase().trim();
-    if (cleanCategory === 'createboot') {
+    // 1. Gawing lowercase ang check para kahit "Createboot" o "createboot" ang value ay gumana
+    const selectedCategory = category.toLowerCase().trim();
+
+    // SHORTCUT: Kung pets ang pinili, return agad.
+    if (selectedCategory === 'createboot') {
+        console.log("[Help Debug] Shortcut triggered for Createboot");
         return createPetPage(0);
     }
 
@@ -93,8 +99,7 @@ async function createCategoryCommandsMenu(category, client) {
     const categoryCommands = [];
 
     try {
-        // --- SAFE DYNAMIC PATH ---
-        // Gagamit tayo ng process.cwd() para sigurado ang daan mula sa root folder
+        // Gagamit ng process.cwd() para sigurado ang path mula sa root folder
         const categoryPath = path.join(process.cwd(), 'src', 'commands', category);
         
         const commandFiles = (await fs.readdir(categoryPath)).filter(file => file.endsWith(".js")).sort();
@@ -111,7 +116,7 @@ async function createCategoryCommandsMenu(category, client) {
 
     const embed = createEmbed({ 
         title: `${icon} ${categoryName} Commands`, 
-        description: categoryCommands.length > 0 ? `List of commands:` : `No commands found in folder: \`${category}\``, 
+        description: categoryCommands.length > 0 ? `List of commands:` : `No commands found.`, 
         color: 'primary' 
     });
 
@@ -123,7 +128,7 @@ async function createCategoryCommandsMenu(category, client) {
     }
 
     embed.setFooter({ text: FOOTER_TEXT });
-    const row = new ActionRowBuilder().addComponents(createButton(BACK_BUTTON_ID, "Back", "primary", "⬅️", false));
+    const row = new ActionRowBuilder().addComponents(createButton(BACK_BUTTON_ID, "Back", "primary", "🏠", false));
 
     return { embeds: [embed], components: [row] };
 }
@@ -140,6 +145,7 @@ export const helpCategorySelectMenu = {
             if (interaction.isStringSelectMenu()) {
                 await interaction.deferUpdate();
                 const selected = interaction.values[0];
+                
                 const result = selected === ALL_COMMANDS_ID 
                     ? await createAllCommandsMenu(1, client) 
                     : await createCategoryCommandsMenu(selected, client);
@@ -150,6 +156,7 @@ export const helpCategorySelectMenu = {
             else if (interaction.isButton()) {
                 const customId = interaction.customId;
 
+                // MODAL FOR PETS
                 if (customId.startsWith('pet-edit-')) {
                     const index = parseInt(customId.split('-')[2]);
                     const modal = new ModalBuilder().setCustomId(`pet-modal-${index}`).setTitle(`Edit: ${PET_IMAGES[index].name}`);
@@ -163,6 +170,7 @@ export const helpCategorySelectMenu = {
                     return await interaction.showModal(modal);
                 }
                 
+                // PET NAVIGATION
                 if (customId.startsWith('pet-prev-') || customId.startsWith('pet-next-')) {
                     await interaction.deferUpdate();
                     const parts = customId.split('-');
@@ -171,6 +179,13 @@ export const helpCategorySelectMenu = {
                     if (parts[1] === 'prev') index--;
                     const { embeds, components } = createPetPage(index);
                     return await interaction.editReply({ embeds, components });
+                }
+
+                // BACK BUTTON
+                if (customId === BACK_BUTTON_ID) {
+                    // Dito ay kailangan mong i-import ang createInitialHelpMenu 
+                    // o i-re-execute ang main help command logic
+                    // Para sa ngayon, pwedeng i-reply ang placeholder
                 }
             }
         } catch (error) {
