@@ -85,12 +85,13 @@ function buildHelpEntries(command, category) {
 
 // --- ITO ANG PINAKAMAHALAGANG PART ---
 async function createCategoryCommandsMenu(category, client) {
-    // 1. Gawing lowercase ang check para kahit "Createboot" o "createboot" ang value ay gumana
-    const selectedCategory = category.toLowerCase().trim();
+    // 1. Dito lang natin gagawing lowercase para sa check
+    const cleanCategory = category.toLowerCase().trim();
 
-    // SHORTCUT: Kung pets ang pinili, return agad.
-    if (selectedCategory === 'createboot') {
-        console.log("[Help Debug] Shortcut triggered for Createboot");
+    // SHORTCUT PARA SA PETS (CREATEBOOT)
+    // Kahit "Createboot" o "createboot" ang matanggap, papasok siya rito
+    if (cleanCategory === 'createboot' || cleanCategory.includes('boot')) {
+        console.log("[Help Debug] Shortcut triggered!");
         return createPetPage(0);
     }
 
@@ -99,9 +100,11 @@ async function createCategoryCommandsMenu(category, client) {
     const categoryCommands = [];
 
     try {
-        // Gagamit ng process.cwd() para sigurado ang path mula sa root folder
+        // GAMITIN ANG ORIGINAL 'category' PARA SA PATH (Case-Sensitive Match sa GitHub)
         const categoryPath = path.join(process.cwd(), 'src', 'commands', category);
         
+        console.log(`[Help Log] Reading folder: ${categoryPath}`);
+
         const commandFiles = (await fs.readdir(categoryPath)).filter(file => file.endsWith(".js")).sort();
         
         for (const file of commandFiles) {
@@ -111,7 +114,7 @@ async function createCategoryCommandsMenu(category, client) {
             }
         }
     } catch (error) {
-        console.error(`[Help Error] Path: ${category}`, error.message);
+        console.error(`[Help Error] Folder error for ${category}:`, error.message);
     }
 
     const embed = createEmbed({ 
@@ -132,6 +135,7 @@ async function createCategoryCommandsMenu(category, client) {
 
     return { embeds: [embed], components: [row] };
 }
+
 
 export async function createAllCommandsMenu(page = 1, client) {
     const embed = createEmbed({ title: "📋 All Commands", description: "Maintenance", color: 'primary' });
