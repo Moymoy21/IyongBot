@@ -1,7 +1,7 @@
 // src/interactions/buttons/create_boot.js
 
 module.exports = {
-    customId: 'create_boot', // Ito dapat ang ID ng button mo
+    customId: 'createboot', // Ito dapat ang ID ng button mo
     async execute(interaction) {
         // Ang listahan ng pet images mo
         const petList = [
