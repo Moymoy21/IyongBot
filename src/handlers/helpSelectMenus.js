@@ -16,12 +16,11 @@ const __dirname = path.dirname(__filename);
 
 const BACK_BUTTON_ID = "help-back-to-main";
 const ALL_COMMANDS_ID = "help-all-commands";
-const CATEGORY_SELECT_ID = "help-category-select";
+const CATEGORY_SELECT_ID = "help-category-select"; // Siguraduhing match ito sa help.js
 const FOOTER_TEXT = "Made with Iyong Official";
 const SUBCOMMAND_TYPE = 1;
 const SUBCOMMAND_GROUP_TYPE = 2;
 
-// --- DATA NG MGA PETS ---
 const PET_IMAGES = [
     { name: "Dilophosaurus", url: "https://static.wikia.nocookie.net/growagarden/images/3/3c/Dilophosaurus.png/revision/latest?cb=20250712071322" },
     { name: "Peryton", url: "https://static.wikia.nocookie.net/growagarden/images/2/26/PerytonPet.png/revision/latest?cb=20260416073019" },
@@ -37,7 +36,6 @@ const CATEGORY_ICONS = {
     Community: "👥"
 };
 
-// --- HELPER PARA SA PET PAGE ---
 export function createPetPage(index) {
     const pet = PET_IMAGES[index];
     const embed = createEmbed({
@@ -83,15 +81,12 @@ function buildHelpEntries(command, category) {
     return entries;
 }
 
-// --- ITO ANG PINAKAMAHALAGANG PART ---
 async function createCategoryCommandsMenu(category, client) {
-    // 1. Dito lang natin gagawing lowercase para sa check
     const cleanCategory = category.toLowerCase().trim();
 
-    // SHORTCUT PARA SA PETS (CREATEBOOT)
-    // Kahit "Createboot" o "createboot" ang matanggap, papasok siya rito
-    if (cleanCategory === 'createboot' || cleanCategory.includes('boot')) {
-        console.log("[Help Debug] Shortcut triggered!");
+    // SHORTCUT CHECK
+    if (cleanCategory === 'createboot') {
+        console.log("[DEBUG] Pet Shortcut Triggered");
         return createPetPage(0);
     }
 
@@ -100,11 +95,7 @@ async function createCategoryCommandsMenu(category, client) {
     const categoryCommands = [];
 
     try {
-        // GAMITIN ANG ORIGINAL 'category' PARA SA PATH (Case-Sensitive Match sa GitHub)
         const categoryPath = path.join(process.cwd(), 'src', 'commands', category);
-        
-        console.log(`[Help Log] Reading folder: ${categoryPath}`);
-
         const commandFiles = (await fs.readdir(categoryPath)).filter(file => file.endsWith(".js")).sort();
         
         for (const file of commandFiles) {
@@ -114,7 +105,7 @@ async function createCategoryCommandsMenu(category, client) {
             }
         }
     } catch (error) {
-        console.error(`[Help Error] Folder error for ${category}:`, error.message);
+        console.error(`[Help Error] Path: ${category}`, error.message);
     }
 
     const embed = createEmbed({ 
@@ -136,31 +127,35 @@ async function createCategoryCommandsMenu(category, client) {
     return { embeds: [embed], components: [row] };
 }
 
-
-export async function createAllCommandsMenu(page = 1, client) {
-    const embed = createEmbed({ title: "📋 All Commands", description: "Maintenance", color: 'primary' });
-    return { embeds: [embed], components: [new ActionRowBuilder().addComponents(createButton(BACK_BUTTON_ID, "Back", "primary", "🏠", false))] };
-}
-
 export const helpCategorySelectMenu = {
-    name: CATEGORY_SELECT_ID,
+    name: "help-category-select", // STRING LITERAL PARA SIGURADONG MATCH
     async execute(interaction, client) {
         try {
+            // 1. STRING SELECT MENU HANDLER
             if (interaction.isStringSelectMenu()) {
-                await interaction.deferUpdate();
                 const selected = interaction.values[0];
+                console.log(`[DEBUG] Menu Clicked! Value: ${selected}`);
                 
-                const result = selected === ALL_COMMANDS_ID 
-                    ? await createAllCommandsMenu(1, client) 
-                    : await createCategoryCommandsMenu(selected, client);
+                await interaction.deferUpdate();
+                
+                let result;
+                if (selected === ALL_COMMANDS_ID) {
+                    result = { embeds: [createEmbed({ title: "📋 Maintenance", color: 'primary' })], components: [new ActionRowBuilder().addComponents(createButton(BACK_BUTTON_ID, "Back", "primary", "🏠", false))] };
+                } else {
+                    result = await createCategoryCommandsMenu(selected, client);
+                }
 
-                return await interaction.editReply({ embeds: result.embeds, components: result.components });
+                return await interaction.editReply({ 
+                    embeds: result.embeds, 
+                    components: result.components 
+                });
             } 
             
+            // 2. BUTTON HANDLER (Para sa navigation at edit)
             else if (interaction.isButton()) {
                 const customId = interaction.customId;
+                console.log(`[DEBUG] Button Clicked! ID: ${customId}`);
 
-                // MODAL FOR PETS
                 if (customId.startsWith('pet-edit-')) {
                     const index = parseInt(customId.split('-')[2]);
                     const modal = new ModalBuilder().setCustomId(`pet-modal-${index}`).setTitle(`Edit: ${PET_IMAGES[index].name}`);
@@ -174,7 +169,6 @@ export const helpCategorySelectMenu = {
                     return await interaction.showModal(modal);
                 }
                 
-                // PET NAVIGATION
                 if (customId.startsWith('pet-prev-') || customId.startsWith('pet-next-')) {
                     await interaction.deferUpdate();
                     const parts = customId.split('-');
@@ -185,15 +179,13 @@ export const helpCategorySelectMenu = {
                     return await interaction.editReply({ embeds, components });
                 }
 
-                // BACK BUTTON
                 if (customId === BACK_BUTTON_ID) {
-                    // Dito ay kailangan mong i-import ang createInitialHelpMenu 
-                    // o i-re-execute ang main help command logic
-                    // Para sa ngayon, pwedeng i-reply ang placeholder
+                    // Dito dapat i-reload ang main help menu
+                    // Pwedeng mag-followUp o editReply depende sa setup mo
                 }
             }
         } catch (error) {
-            console.error('Help interaction error:', error);
+            console.error('[CRITICAL] Help interaction error:', error);
         }
     },
 };
