@@ -4,11 +4,13 @@ import {
     ActionRowBuilder, 
     ModalBuilder, 
     TextInputBuilder, 
-    TextInputStyle,
-    ComponentType 
+    TextInputStyle 
 } from 'discord.js';
 
 const BACK_BUTTON_ID = "help-back-to-main";
+const NEXT_PET_ID = "pet_next_action";
+const PREV_PET_ID = "pet_prev_action";
+const LISTING_PET_ID = "pet_listing_action";
 const FOOTER_TEXT = "Made with Iyong Official";
 
 const PET_IMAGES = [
@@ -21,97 +23,71 @@ export function createPetPage(index) {
     const pet = PET_IMAGES[index];
     const embed = createEmbed({ title: `🐾 ${pet.name}`, color: 'primary' });
     embed.setImage(pet.url);
-    embed.setFooter({ text: `${FOOTER_TEXT} | Pet ${index + 1} of ${PET_IMAGES.length}` });
+    // IMPORTANTE: Dito kukunin ng bot ang "Page Number" mamaya
+    embed.setFooter({ text: `Page ${index + 1} of ${PET_IMAGES.length} | ${FOOTER_TEXT}` });
 
     const row = new ActionRowBuilder().addComponents(
-        createButton(`pet_prev_${index}`, "Prev", "secondary", "⬅️", index === 0),
-        createButton(`pet_next_${index}`, "Next", "secondary", "➡️", index === PET_IMAGES.length - 1),
-        createButton(`pet_listing_${index}`, "Create Listing", "success", "🛍️", false),
+        createButton(PREV_PET_ID, "Prev", "secondary", "⬅️", index === 0),
+        createButton(NEXT_PET_ID, "Next", "secondary", "➡️", index === PET_IMAGES.length - 1),
+        createButton(LISTING_PET_ID, "Create Listing", "success", "🛍️", false),
         createButton(BACK_BUTTON_ID, "Back", "primary", "🏠", false)
     );
     return { embeds: [embed], components: [row] };
 }
 
-// ITO ANG MAGHA-HANDLE NG LAHAT
 export const helpCategorySelectMenu = {
-    name: "help-category-select", 
+    name: "help-category-select",
     async execute(interaction, client) {
         const { customId } = interaction;
 
         try {
-            // 1. HANDLE MODAL (CREATE LISTING) - No defer here!
-            if (customId.startsWith('pet_listing_')) {
-                const index = parseInt(customId.split('_')[2]);
+            // 1. MODAL (No defer)
+            if (customId === LISTING_PET_ID) {
+                const footerText = interaction.message.embeds[0].footer.text;
+                const index = parseInt(footerText.match(/\d+/)[0]) - 1;
+                
                 const modal = new ModalBuilder()
                     .setCustomId(`listing_modal_${index}`)
                     .setTitle(`Listing: ${PET_IMAGES[index].name}`);
 
-                const priceInput = new TextInputBuilder()
-                    .setCustomId('price')
-                    .setLabel("Selling Price")
-                    .setPlaceholder("Enter amount...")
-                    .setStyle(TextInputStyle.Short)
-                    .setRequired(true);
-
-                const descInput = new TextInputBuilder()
-                    .setCustomId('desc')
-                    .setLabel("Item Description")
-                    .setPlaceholder("Details about the pet...")
-                    .setStyle(TextInputStyle.Paragraph)
-                    .setRequired(true);
-
-                modal.addComponents(
-                    new ActionRowBuilder().addComponents(priceInput),
-                    new ActionRowBuilder().addComponents(descInput)
+                const row = new ActionRowBuilder().addComponents(
+                    new TextInputBuilder().setCustomId('price').setLabel("Price").setStyle(TextInputStyle.Short).setRequired(true)
                 );
+                modal.addComponents(row);
                 return await interaction.showModal(modal);
             }
 
-            // 2. FOR EVERYTHING ELSE - DEFER UPDATE
-            if (!interaction.deferred && !interaction.replied) {
-                await interaction.deferUpdate();
+            // 2. DEFER PARA SA BUTTONS/MENU
+            if (!interaction.deferred && !interaction.replied) await interaction.deferUpdate();
+
+            // 3. SELECT MENU
+            if (interaction.isStringSelectMenu() && interaction.values[0] === 'createboot') {
+                return await interaction.editReply(createPetPage(0));
             }
 
-            // 3. HANDLE BUTTONS (PREV/NEXT/BACK)
-            if (interaction.isButton()) {
-                if (customId.startsWith('pet_prev_') || customId.startsWith('pet_next_')) {
-                    const parts = customId.split('_');
-                    let index = parseInt(parts[2]);
-                    if (parts[1] === 'next') index++;
-                    if (parts[1] === 'prev') index--;
-                    
-                    const result = createPetPage(index);
-                    return await interaction.editReply(result);
-                }
+            // 4. NAVIGATION BUTTONS
+            if (customId === NEXT_PET_ID || customId === PREV_PET_ID) {
+                const footerText = interaction.message.embeds[0].footer.text;
+                let index = parseInt(footerText.match(/\d+/)[0]) - 1;
 
-                if (customId === BACK_BUTTON_ID) {
-                    return await interaction.editReply({ 
-                        content: "🏠 Menu has been reset. Please use `/help` to restart.", 
-                        embeds: [], 
-                        components: [] 
-                    });
-                }
+                if (customId === NEXT_PET_ID) index++;
+                else index--;
+
+                return await interaction.editReply(createPetPage(index));
             }
 
-            // 4. HANDLE SELECT MENU
-            if (interaction.isStringSelectMenu()) {
-                const selected = interaction.values[0];
-                if (selected === 'createboot') {
-                    const result = createPetPage(0);
-                    return await interaction.editReply(result);
-                }
-                // Handle other categories here if needed
+            if (customId === BACK_BUTTON_ID) {
+                return await interaction.editReply({ content: "Paki-type ulit ang `/help`." });
             }
 
         } catch (error) {
-            console.error('[FINAL HANDLER ERROR]', error);
+            console.error('[CRITICAL ERROR]', error);
         }
     }
 };
 
-// DAHIL ANG INTERACTION HANDLER MO AY NAGHAHANAP NG MODULE PER ID...
-// Gagawa tayo ng "Aliases" para mahanap ng bot itong file na ito
-export const petNextHandler = { name: "pet_next", execute: helpCategorySelectMenu.execute };
-export const petPrevHandler = { name: "pet_prev", execute: helpCategorySelectMenu.execute };
-export const petListingHandler = { name: "pet_listing", execute: helpCategorySelectMenu.execute };
-export const helpBackHandler = { name: BACK_BUTTON_ID, execute: helpCategorySelectMenu.execute };
+// EXPORTS PARA SA HANDLER LOADER
+export const petNext = { name: NEXT_PET_ID, execute: helpCategorySelectMenu.execute };
+export const petPrev = { name: PREV_PET_ID, execute: helpCategorySelectMenu.execute };
+export const petList = { name: LISTING_PET_ID, execute: helpCategorySelectMenu.execute };
+export const helpBack = { name: BACK_BUTTON_ID, execute: helpCategorySelectMenu.execute };
