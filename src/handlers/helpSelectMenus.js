@@ -15,6 +15,7 @@ const __dirname = path.dirname(__filename);
 
 const BACK_BUTTON_ID = "help-back-to-main";
 const ALL_COMMANDS_ID = "help-all-commands";
+const CATEGORY_SELECT_ID = "help-category-select"; 
 const FOOTER_TEXT = "Made with Iyong Official";
 
 const PET_IMAGES = [
@@ -32,7 +33,7 @@ const CATEGORY_ICONS = {
     Community: "👥"
 };
 
-// --- ETO YUNG HINAHANAP NA EXPORT NG HELPBUTTONS.JS ---
+// --- ESSENTIAL EXPORTS ---
 export async function createAllCommandsMenu(page = 1, client) {
     const embed = createEmbed({ 
         title: "📋 All Commands", 
@@ -58,6 +59,7 @@ export function createPetPage(index) {
     return { embeds: [embed], components: [row] };
 }
 
+// --- FOLDER READING LOGIC ---
 async function createCategoryCommandsMenu(category, client) {
     const cleanCategory = category.toLowerCase().trim();
     if (cleanCategory === 'createboot') return createPetPage(0);
@@ -79,7 +81,7 @@ async function createCategoryCommandsMenu(category, client) {
                 });
             }
         }
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error(`[Folder Error] ${category}:`, e.message); }
 
     const embed = createEmbed({ 
         title: `${icon} ${categoryName} Commands`, 
@@ -98,12 +100,14 @@ async function createCategoryCommandsMenu(category, client) {
     return { embeds: [embed], components: [row] };
 }
 
+// --- MAIN HANDLER ---
 export const helpCategorySelectMenu = {
     name: "help-category-select",
     async execute(interaction, client) {
         try {
             const customId = interaction.customId;
 
+            // Handle Modal first (Bawal mag-deferUpdate bago ang Modal)
             if (interaction.isButton() && customId.startsWith('pet-listing-')) {
                 const index = parseInt(customId.split('-')[2]);
                 const modal = new ModalBuilder().setCustomId(`listing-modal-${index}`).setTitle(`Listing: ${PET_IMAGES[index].name}`);
@@ -115,7 +119,8 @@ export const helpCategorySelectMenu = {
                 return await interaction.showModal(modal);
             }
 
-            await interaction.deferUpdate();
+            // Para sa lahat ng ibang interactions, safe na mag-defer
+            if (!interaction.deferred && !interaction.replied) await interaction.deferUpdate();
 
             if (interaction.isStringSelectMenu()) {
                 const selected = interaction.values[0];
