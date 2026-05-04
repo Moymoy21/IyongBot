@@ -46,14 +46,16 @@ export function createPetPage(index) {
     embed.setFooter({ text: `${FOOTER_TEXT} | Pet ${index + 1} of ${PET_IMAGES.length}` });
 
     const row = new ActionRowBuilder().addComponents(
-        createButton(`pet-prev-${index}`, "", "secondary", "⬅️", index === 0),
-        createButton(`pet-next-${index}`, "", "secondary", "➡️", index === PET_IMAGES.length - 1),
+        // NILAGYAN NG LABEL NA "Prev" AT "Next" PARA HINDI MAG-ERROR
+        createButton(`pet-prev-${index}`, "Prev", "secondary", "⬅️", index === 0),
+        createButton(`pet-next-${index}`, "Next", "secondary", "➡️", index === PET_IMAGES.length - 1),
         createButton(`pet-edit-${index}`, "Edit Details", "success", "📝", false),
         createButton(BACK_BUTTON_ID, "Back", "primary", "🏠", false)
     );
 
     return { embeds: [embed], components: [row] };
 }
+
 
 function normalizeCommandData(command) {
     const rawData = command?.data;
