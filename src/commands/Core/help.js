@@ -16,7 +16,6 @@ const __dirname = path.dirname(__filename);
 
 const CATEGORY_SELECT_ID = "help-category-select";
 const ALL_COMMANDS_ID = "help-all-commands";
-const HELP_MENU_TIMEOUT_MS = 5 * 60 * 1000;
 
 const CATEGORY_ICONS = {
     Economy: "💰",
@@ -24,7 +23,6 @@ const CATEGORY_ICONS = {
 };
 
 export async function createInitialHelpMenu(client) {
-    // 1. Safety Check para sa folders
     let categoryDirs = [];
     try {
         const commandsPath = path.join(__dirname, "../../commands");
@@ -59,17 +57,26 @@ export async function createInitialHelpMenu(client) {
         color: 'primary'
     });
 
+    // Trading Boot Section with Slashes
     embed.addFields({
         name: "🛍️ **Create a Trading Boot**",
-        value: "Show what you are selling or stocks",
-        inline: true
+        value: "Show what you are selling or stocks\n\n" +
+               "> `/MyBoot` - Check your own boot\n" +
+               "> `/CreateListing` - Add items to sell\n" +
+               "> `/PlayerBoot <username>` - Search for other player's boot",
+        inline: false
     });
 
-    // 2. FIXED: Define the buttons properly
+    // Ibinabalik natin ang footer mo rito
+    embed.setFooter({ 
+        text: "Made with Iyong Official" 
+    });
+    embed.setTimestamp();
+
     const bugReportButton = new ButtonBuilder()
         .setLabel('Report Bug')
         .setStyle(ButtonStyle.Link)
-        .setURL('https://discord.gg/yourlink'); // Palitan mo ng link mo
+        .setURL('https://discord.gg/yourlink'); 
 
     const selectRow = createSelectMenu(
         CATEGORY_SELECT_ID,
@@ -107,19 +114,5 @@ export default {
                 components: []
             });
         }
-
-        setTimeout(async () => {
-            try {
-                const closedEmbed = createEmbed({
-                    title: "Help menu closed",
-                    description: "Use /help again to see the menu.",
-                    color: "error",
-                });
-                await InteractionHelper.safeEditReply(interaction, {
-                    embeds: [closedEmbed],
-                    components: [],
-                });
-            } catch (error) {}
-        }, HELP_MENU_TIMEOUT_MS);
     },
 };
