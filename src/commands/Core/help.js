@@ -39,34 +39,32 @@ export async function createInitialHelpMenu(client) {
         console.error("Error reading commands directory:", e);
     }
 
-    // Sa loob ng help.js, i-update ang mapping ng options:
-const options = [
-    {
-        label: "📋 All Commands",
-        description: "View all available commands",
-        value: ALL_COMMANDS_ID,
-    },
-    ...categoryDirs.map((category) => {
-        const displayName = category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
-        const icon = CATEGORY_ICONS[displayName] || "🔍";
-        
-        // MAHALAGA: Ipadala ang original na folder name para sa path reading
-        return {
-            label: `${icon} ${displayName}`,
-            description: `Commands in ${displayName}`,
-            value: category, 
-        };
-    }),
-];
+    const options = [
+        {
+            label: "📋 All Commands",
+            description: "View all available commands",
+            value: ALL_COMMANDS_ID,
+        },
+        ...categoryDirs.map((category) => {
+            const displayName = category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
+            const icon = CATEGORY_ICONS[displayName] || "🔍";
+            return {
+                label: `${icon} ${displayName}`,
+                description: `Commands in ${displayName}`,
+                value: category, // Panatilihing original casing para sa ibang folders
+            };
+        }),
+    ];
 
-
-    // Siguraduhin na isa lang ang 'createboot' option para iwas conflict
-    const hasCreateBoot = options.some(opt => opt.value === 'createboot');
+    // --- ITO ANG KRITIKAL NA PART ---
+    // Dahil binura mo na ang folder, i-force natin ang "Createboot" option dito
+    // Siguraduhin na ang value ay 'createboot' (lowercase) para mahuli ng handler shortcut
+    const hasCreateBoot = options.some(opt => opt.value.toLowerCase() === 'createboot');
     if (!hasCreateBoot) {
         options.push({
             label: "🛍️ Createboot",
-            description: "View and Edit Pets",
-            value: "createboot"
+            description: "View and Edit Pets (Dilophosaurus & more)",
+            value: "createboot" // <--- Ito ang match sa handler!
         });
     }
 
@@ -85,6 +83,7 @@ const options = [
         inline: false
     });
 
+    // Ang footer mo na "Iyong Official"
     embed.setFooter({ text: "Made with Iyong Official" });
     embed.setTimestamp();
 
