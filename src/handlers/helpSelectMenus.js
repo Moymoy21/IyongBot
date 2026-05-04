@@ -135,41 +135,42 @@ export const helpCategorySelectMenu = {
                 const customId = interaction.customId;
 
                 // TRIGGER MODAL (No deferUpdate here!)
-                if (customId.startsWith('pet-edit-')) {
-                    const index = customId.split('-')[2];
-                    const modal = new ModalBuilder()
-                        .setCustomId(`pet-modal-${index}`)
-                        .setTitle(`Details for ${PET_IMAGES[index].name}`);
+               // TRIGGER MODAL (Sa loob ng helpCategorySelectMenu.execute)
+if (customId.startsWith('pet-edit-')) {
+    const index = customId.split('-')[2];
+    const modal = new ModalBuilder()
+        .setCustomId(`pet-modal-${index}`)
+        .setTitle(`Details for ${PET_IMAGES[index].name}`);
 
-                    const ageInput = new TextInputBuilder()
-                        .setCustomId('pet-age')
-                        .setLabel("Enter Age")
-                        .setStyle(TextInputStyle.Short)
-                        .setPlaceholder("e.g. 2 Years")
-                        .setRequired(true);
+    // --- MGA INPUT FIELDS ---
+    const ageInput = new TextInputBuilder()
+        .setCustomId('pet-age').setLabel("Enter Age").setStyle(TextInputStyle.Short).setRequired(true);
 
-                    const weightInput = new TextInputBuilder()
-                        .setCustomId('pet-weight')
-                        .setLabel("Enter Weight")
-                        .setStyle(TextInputStyle.Short)
-                        .setPlaceholder("e.g. 15kg")
-                        .setRequired(true);
+    const weightInput = new TextInputBuilder()
+        .setCustomId('pet-weight').setLabel("Enter Weight").setStyle(TextInputStyle.Short).setRequired(true);
 
-                    const tokenInput = new TextInputBuilder()
-                        .setCustomId('pet-token')
-                        .setLabel("Enter Token Price")
-                        .setStyle(TextInputStyle.Short)
-                        .setPlaceholder("e.g. 500 Tokens")
-                        .setRequired(true);
+    const tokenInput = new TextInputBuilder()
+        .setCustomId('pet-token').setLabel("Enter Token Price").setStyle(TextInputStyle.Short).setRequired(true);
 
-                    modal.addComponents(
-                        new ActionRowBuilder().addComponents(ageInput),
-                        new ActionRowBuilder().addComponents(weightInput),
-                        new ActionRowBuilder().addComponents(tokenInput)
-                    );
+    // BAGONG FIELD: PET MUTATION
+    const mutationInput = new TextInputBuilder()
+        .setCustomId('pet-mutation')
+        .setLabel("Enter Pet Mutation")
+        .setPlaceholder("e.g. Rare, Shiny, Albino")
+        .setStyle(TextInputStyle.Short)
+        .setRequired(true);
 
-                    await interaction.showModal(modal);
-                }
+    // Idagdag lahat sa modal
+    modal.addComponents(
+        new ActionRowBuilder().addComponents(ageInput),
+        new ActionRowBuilder().addComponents(weightInput),
+        new ActionRowBuilder().addComponents(tokenInput),
+        new ActionRowBuilder().addComponents(mutationInput) // Nadagdag dito
+    );
+
+    await interaction.showModal(modal);
+}
+
                 
                 // SLIDE NAVIGATION (Left/Right)
                 else if (customId.startsWith('pet-prev-') || customId.startsWith('pet-next-')) {
