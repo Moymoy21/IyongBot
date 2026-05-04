@@ -17,15 +17,12 @@ const FOOTER_TEXT = "Made with Iyong Official";
 const SUBCOMMAND_TYPE = 1;
 const SUBCOMMAND_GROUP_TYPE = 2;
 
-// Dito natin lilimitahan ang mga icons para sa choices mo
 const CATEGORY_ICONS = {
     Economy: "💰",
-    CreateBoot: "🛍️",
+    Createboot: "🛍️", // Siguraduhing tugma ang capitalization
     Utility: "🛠️"
 };
 
-// LISTAHAN NG MGA FOLDERS NA GUSTO MO LANG IPAKITA
-// Siguraduhin na ang pangalan dito ay tugma sa folder names mo sa GitHub (lowercase)
 const ALLOWED_CATEGORIES = ["economy", "createboot", "utility"];
 
 function buildHelpEntries(command, category) {
@@ -86,6 +83,32 @@ function normalizeCommandData(command) {
 
 async function createCategoryCommandsMenu(category, client) {
     const categoryName = category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
+    
+    // --- SPECIAL CASE PARA SA CREATEBOOT (PET LIST) ---
+    if (category.toLowerCase() === 'createboot') {
+        const petList = [
+            "https://static.wikia.nocookie.net/growagarden/images/3/3c/Dilophosaurus.png/revision/latest?cb=20250712071322",
+            "https://link-to-pet-image-2.png",
+            "https://link-to-pet-image-3.png"
+            // Dagdagan mo lang dito ang links mo
+        ];
+
+        const formattedList = petList.map((link, index) => `**${index + 1}** ${link}`).join('\n');
+
+        const embed = createEmbed({
+            title: "🐾 Pet List Selection",
+            description: `Mangyaring pumili ng pet sa listahan:\n\n${formattedList}`,
+            color: 'primary'
+        });
+
+        embed.setFooter({ text: FOOTER_TEXT });
+        embed.setTimestamp();
+
+        const backButton = createButton(BACK_BUTTON_ID, "Back", "primary", "⬅️", false);
+        return { embeds: [embed], components: [new ActionRowBuilder().addComponents(backButton)] };
+    }
+    // --- END OF SPECIAL CASE ---
+
     const icon = CATEGORY_ICONS[categoryName] || "🔍";
     const categoryCommands = [];
 
@@ -147,7 +170,6 @@ export async function createAllCommandsMenu(page = 1, client) {
     const allCommands = [];
 
     const commandsPath = path.join(__dirname, "../commands");
-    // FILTERING LOGIC: Dito natin tinitira lang yung allowed categories
     const categoryDirs = (await fs.readdir(commandsPath, { withFileTypes: true }))
         .filter((dirent) => dirent.isDirectory() && ALLOWED_CATEGORIES.includes(dirent.name.toLowerCase()))
         .map((dirent) => dirent.name)
