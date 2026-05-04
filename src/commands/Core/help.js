@@ -39,22 +39,26 @@ export async function createInitialHelpMenu(client) {
         console.error("Error reading commands directory:", e);
     }
 
-    const options = [
-        {
-            label: "📋 All Commands",
-            description: "View all available commands",
-            value: ALL_COMMANDS_ID,
-        },
-        ...categoryDirs.map((category) => {
-            const displayName = category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
-            const icon = CATEGORY_ICONS[displayName] || "🔍";
-            return {
-                label: `${icon} ${displayName}`,
-                description: `Commands in ${displayName}`,
-                value: category.toLowerCase(), // <--- FIX: Ginawang lowercase para mag-match sa shortcut
-            };
-        }),
-    ];
+    // Sa loob ng help.js, i-update ang mapping ng options:
+const options = [
+    {
+        label: "📋 All Commands",
+        description: "View all available commands",
+        value: ALL_COMMANDS_ID,
+    },
+    ...categoryDirs.map((category) => {
+        const displayName = category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
+        const icon = CATEGORY_ICONS[displayName] || "🔍";
+        
+        // MAHALAGA: Ipadala ang original na folder name para sa path reading
+        return {
+            label: `${icon} ${displayName}`,
+            description: `Commands in ${displayName}`,
+            value: category, 
+        };
+    }),
+];
+
 
     // Siguraduhin na isa lang ang 'createboot' option para iwas conflict
     const hasCreateBoot = options.some(opt => opt.value === 'createboot');
