@@ -9,14 +9,15 @@ import {
     TextInputBuilder, 
     TextInputStyle 
 } from 'discord.js';
-import { logger } from '../utils/logger.js';
+// I-import ito para sa Back Button logic
+import { createInitialHelpMenu } from '../commands/Core/help.js'; 
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const BACK_BUTTON_ID = "help-back-to-main";
 const ALL_COMMANDS_ID = "help-all-commands";
-const CATEGORY_SELECT_ID = "help-category-select"; // Siguraduhing match ito sa help.js
+const CATEGORY_SELECT_ID = "help-category-select"; 
 const FOOTER_TEXT = "Made with Iyong Official";
 const SUBCOMMAND_TYPE = 1;
 const SUBCOMMAND_GROUP_TYPE = 2;
@@ -36,6 +37,7 @@ const CATEGORY_ICONS = {
     Community: "👥"
 };
 
+// --- HELPER PARA SA PET PAGE ---
 export function createPetPage(index) {
     const pet = PET_IMAGES[index];
     const embed = createEmbed({
@@ -46,16 +48,15 @@ export function createPetPage(index) {
     embed.setFooter({ text: `${FOOTER_TEXT} | Pet ${index + 1} of ${PET_IMAGES.length}` });
 
     const row = new ActionRowBuilder().addComponents(
-        // NILAGYAN NG LABEL NA "Prev" AT "Next" PARA HINDI MAG-ERROR
         createButton(`pet-prev-${index}`, "Prev", "secondary", "⬅️", index === 0),
         createButton(`pet-next-${index}`, "Next", "secondary", "➡️", index === PET_IMAGES.length - 1),
-        createButton(`pet-edit-${index}`, "Edit Details", "success", "📝", false),
+        // Ginawang "Create Listing"
+        createButton(`pet-listing-${index}`, "Create Listing", "success", "🛍️", false),
         createButton(BACK_BUTTON_ID, "Back", "primary", "🏠", false)
     );
 
     return { embeds: [embed], components: [row] };
 }
-
 
 function normalizeCommandData(command) {
     const rawData = command?.data;
@@ -86,9 +87,7 @@ function buildHelpEntries(command, category) {
 async function createCategoryCommandsMenu(category, client) {
     const cleanCategory = category.toLowerCase().trim();
 
-    // SHORTCUT CHECK
     if (cleanCategory === 'createboot') {
-        console.log("[DEBUG] Pet Shortcut Triggered");
         return createPetPage(0);
     }
 
@@ -130,15 +129,13 @@ async function createCategoryCommandsMenu(category, client) {
 }
 
 export const helpCategorySelectMenu = {
-    name: "help-category-select", // STRING LITERAL PARA SIGURADONG MATCH
+    name: "help-category-select",
     async execute(interaction, client) {
         try {
-            // 1. STRING SELECT MENU HANDLER
+            // --- SELECT MENU HANDLER ---
             if (interaction.isStringSelectMenu()) {
-                const selected = interaction.values[0];
-                console.log(`[DEBUG] Menu Clicked! Value: ${selected}`);
-                
                 await interaction.deferUpdate();
+                const selected = interaction.values[0];
                 
                 let result;
                 if (selected === ALL_COMMANDS_ID) {
@@ -147,30 +144,21 @@ export const helpCategorySelectMenu = {
                     result = await createCategoryCommandsMenu(selected, client);
                 }
 
-                return await interaction.editReply({ 
-                    embeds: result.embeds, 
-                    components: result.components 
-                });
+                return await interaction.editReply({ embeds: result.embeds, components: result.components });
             } 
             
-            // 2. BUTTON HANDLER (Para sa navigation at edit)
+            // --- BUTTON HANDLER ---
             else if (interaction.isButton()) {
                 const customId = interaction.customId;
-                console.log(`[DEBUG] Button Clicked! ID: ${customId}`);
 
-                if (customId.startsWith('pet-edit-')) {
-                    const index = parseInt(customId.split('-')[2]);
-                    const modal = new ModalBuilder().setCustomId(`pet-modal-${index}`).setTitle(`Edit: ${PET_IMAGES[index].name}`);
-                    const fields = [
-                        new TextInputBuilder().setCustomId('pet-age').setLabel("Age").setStyle(TextInputStyle.Short).setRequired(true),
-                        new TextInputBuilder().setCustomId('pet-weight').setLabel("Weight").setStyle(TextInputStyle.Short).setRequired(true),
-                        new TextInputBuilder().setCustomId('pet-token').setLabel("Token Price").setStyle(TextInputStyle.Short).setRequired(true),
-                        new TextInputBuilder().setCustomId('pet-mutation').setLabel("Mutation").setStyle(TextInputStyle.Short).setRequired(true)
-                    ];
-                    modal.addComponents(fields.map(f => new ActionRowBuilder().addComponents(f)));
-                    return await interaction.showModal(modal);
+                // 1. Back to Main Help
+                if (customId === BACK_BUTTON_ID) {
+                    await interaction.deferUpdate();
+                    const { embeds, components } = await createInitialHelpMenu(client);
+                    return await interaction.editReply({ embeds, components });
                 }
-                
+
+                // 2. Navigation (Prev/Next)
                 if (customId.startsWith('pet-prev-') || customId.startsWith('pet-next-')) {
                     await interaction.deferUpdate();
                     const parts = customId.split('-');
@@ -181,9 +169,20 @@ export const helpCategorySelectMenu = {
                     return await interaction.editReply({ embeds, components });
                 }
 
-                if (customId === BACK_BUTTON_ID) {
-                    // Dito dapat i-reload ang main help menu
-                    // Pwedeng mag-followUp o editReply depende sa setup mo
+                // 3. Create Listing (Modal)
+                if (customId.startsWith('pet-listing-')) {
+                    const index = parseInt(customId.split('-')[2]);
+                    const modal = new ModalBuilder()
+                        .setCustomId(`listing-modal-${index}`)
+                        .setTitle(`Listing: ${PET_IMAGES[index].name}`);
+
+                    const fields = [
+                        new TextInputBuilder().setCustomId('listing-price').setLabel("Price").setStyle(TextInputStyle.Short).setPlaceholder("e.g. 500 Coins").setRequired(true),
+                        new TextInputBuilder().setCustomId('listing-desc').setLabel("Description").setStyle(TextInputStyle.Paragraph).setPlaceholder("Details about the pet...").setRequired(true)
+                    ];
+
+                    modal.addComponents(fields.map(f => new ActionRowBuilder().addComponents(f)));
+                    return await interaction.showModal(modal);
                 }
             }
         } catch (error) {
