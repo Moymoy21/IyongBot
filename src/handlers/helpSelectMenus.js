@@ -19,7 +19,7 @@ const SUBCOMMAND_GROUP_TYPE = 2;
 
 const CATEGORY_ICONS = {
     Economy: "💰",
-    Createboot: "🛍️", // Siguraduhing tugma ang capitalization
+    Createboot: "🛍️",
     Utility: "🛠️"
 };
 
@@ -84,28 +84,34 @@ function normalizeCommandData(command) {
 async function createCategoryCommandsMenu(category, client) {
     const categoryName = category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
     
-    // --- SPECIAL CASE PARA SA CREATEBOOT (PET LIST) ---
+    // --- SPECIAL CASE PARA SA CREATEBOOT (IMAGE LIST) ---
     if (category.toLowerCase() === 'createboot') {
-        const petList = [
+        // Ilagay dito ang lahat ng image links mo
+        const petImages = [
             "https://static.wikia.nocookie.net/growagarden/images/3/3c/Dilophosaurus.png/revision/latest?cb=20250712071322",
             "https://link-to-pet-image-2.png",
             "https://link-to-pet-image-3.png"
-            // Dagdagan mo lang dito ang links mo
         ];
 
-        const formattedList = petList.map((link, index) => `**${index + 1}** ${link}`).join('\n');
-
-        const embed = createEmbed({
-            title: "🐾 Pet List Selection",
-            description: `Mangyaring pumili ng pet sa listahan:\n\n${formattedList}`,
-            color: 'primary'
+        // Gagawa tayo ng listahan ng Embeds (isa para sa bawat image)
+        const embeds = petImages.map((url, index) => {
+            const embed = createEmbed({
+                title: `🐾 Pet #${index + 1}`,
+                color: 'primary'
+            });
+            embed.setImage(url); // Dito lalabas ang actual na picture
+            
+            // Sa huling embed lang natin ilalagay ang footer para malinis
+            if (index === petImages.length - 1) {
+                embed.setFooter({ text: FOOTER_TEXT });
+            }
+            return embed;
         });
 
-        embed.setFooter({ text: FOOTER_TEXT });
-        embed.setTimestamp();
-
         const backButton = createButton(BACK_BUTTON_ID, "Back", "primary", "⬅️", false);
-        return { embeds: [embed], components: [new ActionRowBuilder().addComponents(backButton)] };
+        const row = new ActionRowBuilder().addComponents(backButton);
+
+        return { embeds: embeds, components: [row] };
     }
     // --- END OF SPECIAL CASE ---
 
