@@ -17,9 +17,15 @@ const __dirname = path.dirname(__filename);
 const CATEGORY_SELECT_ID = "help-category-select";
 const ALL_COMMANDS_ID = "help-all-commands";
 
+// Dito natin i-ma-match ang icons base sa Display Name
 const CATEGORY_ICONS = {
     Economy: "💰",
-    CreateBoot: "🛍️",
+    Createboot: "🛍️",
+    Core: "⚙️",
+    Community: "👥",
+    Birthday: "🎂",
+    Fun: "🎮",
+    Utility: "🛠️"
 };
 
 export async function createInitialHelpMenu(client) {
@@ -34,6 +40,7 @@ export async function createInitialHelpMenu(client) {
         console.error("Error reading commands directory:", e);
     }
 
+    // Gagawa tayo ng listahan ng options mula sa folders
     const options = [
         {
             label: "📋 All Commands",
@@ -41,15 +48,26 @@ export async function createInitialHelpMenu(client) {
             value: ALL_COMMANDS_ID,
         },
         ...categoryDirs.map((category) => {
-            const categoryName = category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
-            const icon = CATEGORY_ICONS[categoryName] || "🔍";
+            const displayName = category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
+            const icon = CATEGORY_ICONS[displayName] || "🔍";
             return {
-                label: `${icon} ${categoryName}`,
-                description: `Commands in ${categoryName}`,
-                value: category,
+                label: `${icon} ${displayName}`,
+                description: `Commands in ${displayName}`,
+                value: category, // Ipapasa ang saktong folder name (e.g., 'Economy')
             };
         }),
     ];
+
+    // --- SHORTCUT LOGIC ---
+    // Kung walang folder na 'createboot', i-add natin manual para lumabas sa menu
+    const hasCreateBoot = categoryDirs.some(d => d.toLowerCase() === 'createboot');
+    if (!hasCreateBoot) {
+        options.push({
+            label: "🛍️ Createboot",
+            description: "View and Edit Pets",
+            value: "createboot" // Ito ang mag-ti-trigger sa shortcut sa helpSelectMenus.js
+        });
+    }
 
     const embed = createEmbed({ 
         title: `${client?.user?.username || "Bot"} Help Center`,
@@ -57,7 +75,6 @@ export async function createInitialHelpMenu(client) {
         color: 'primary'
     });
 
-    // Trading Boot Section with Slashes
     embed.addFields({
         name: "🛍️ **Create a Trading Boot**",
         value: "Show what you are selling or stocks\n\n" +
@@ -67,7 +84,6 @@ export async function createInitialHelpMenu(client) {
         inline: false
     });
 
-    // Ibinabalik natin ang footer mo rito
     embed.setFooter({ 
         text: "Made with Iyong Official" 
     });
