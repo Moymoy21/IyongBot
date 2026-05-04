@@ -17,7 +17,6 @@ const __dirname = path.dirname(__filename);
 const CATEGORY_SELECT_ID = "help-category-select";
 const ALL_COMMANDS_ID = "help-all-commands";
 
-// Dito natin i-ma-match ang icons base sa Display Name
 const CATEGORY_ICONS = {
     Economy: "💰",
     Createboot: "🛍️",
@@ -40,7 +39,6 @@ export async function createInitialHelpMenu(client) {
         console.error("Error reading commands directory:", e);
     }
 
-    // Gagawa tayo ng listahan ng options mula sa folders
     const options = [
         {
             label: "📋 All Commands",
@@ -53,19 +51,18 @@ export async function createInitialHelpMenu(client) {
             return {
                 label: `${icon} ${displayName}`,
                 description: `Commands in ${displayName}`,
-                value: category, // Ipapasa ang saktong folder name (e.g., 'Economy')
+                value: category.toLowerCase(), // <--- FIX: Ginawang lowercase para mag-match sa shortcut
             };
         }),
     ];
 
-    // --- SHORTCUT LOGIC ---
-    // Kung walang folder na 'createboot', i-add natin manual para lumabas sa menu
-    const hasCreateBoot = categoryDirs.some(d => d.toLowerCase() === 'createboot');
+    // Siguraduhin na isa lang ang 'createboot' option para iwas conflict
+    const hasCreateBoot = options.some(opt => opt.value === 'createboot');
     if (!hasCreateBoot) {
         options.push({
             label: "🛍️ Createboot",
             description: "View and Edit Pets",
-            value: "createboot" // Ito ang mag-ti-trigger sa shortcut sa helpSelectMenus.js
+            value: "createboot"
         });
     }
 
@@ -84,9 +81,7 @@ export async function createInitialHelpMenu(client) {
         inline: false
     });
 
-    embed.setFooter({ 
-        text: "Made with Iyong Official" 
-    });
+    embed.setFooter({ text: "Made with Iyong Official" });
     embed.setTimestamp();
 
     const bugReportButton = new ButtonBuilder()
