@@ -1,10 +1,10 @@
 import { createPetPage } from '../../handlers/helpSelectMenus.js';
 
-export const createBoot = {
-    name: 'createboot', // Gamitin ang 'name' imbes na 'customId' para sa loader mo
+export default {
+    name: 'createboot', 
     async execute(interaction, client) {
         try {
-            // Ipakita ang unang page (index 0)
+            // Dahil ito ay listing logic, ipakita ang current listings
             const response = createPetPage(0);
             
             await interaction.reply({
@@ -13,12 +13,7 @@ export const createBoot = {
                 ephemeral: true 
             });
         } catch (error) {
-            console.error('[BUTTON ERROR]', error);
-            if (!interaction.replied) {
-                await interaction.reply({ content: "Error loading create boot menu.", ephemeral: true });
-            }
+            console.error('[CREATEBOOT ERROR]', error);
         }
     },
 };
-
-export default createBoot;
