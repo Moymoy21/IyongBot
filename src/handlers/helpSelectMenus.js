@@ -30,7 +30,7 @@ export function createActiveListingPage(index) {
     const pet = activeListings[index];
     const embed = createEmbed({ 
         title: `🏪 Active Listing: ${pet.name}`, 
-        description: `**Details:**\n🔹 Mutation: ${pet.mutation}\n🔹 Age: ${pet.age}\n🔹 Weight: ${pet.weight}\n💰 Price: ${pet.price} Tokens`,
+        description: `**Details:**\n🔹 Mutation: ${pet.mutation}\n🔹 Age: ${pet.age}\n🔹 Weight: ${pet.weight}\n💰 Price: ${pet.price} Tokens\n\n👤 **Seller:** <@${pet.sellerId}>`,
         color: 'primary' 
     });
     embed.setImage(pet.url);
@@ -77,9 +77,8 @@ export const helpCategorySelectMenu = {
                 return await interaction.showModal(modal);
             }
 
-            if (!interaction.deferred && !interaction.replied) await interaction.deferUpdate();
-
             if (customId === NEXT_PET_ID || customId === PREV_PET_ID) {
+                if (!interaction.deferred && !interaction.replied) await interaction.deferUpdate();
                 const footer = interaction.message.embeds[0].footer.text;
                 let index = parseInt(footer.match(/\d+/)[0]) - 1;
                 index = (customId === NEXT_PET_ID) ? index + 1 : index - 1;
@@ -89,6 +88,17 @@ export const helpCategorySelectMenu = {
             if (customId === REMOVE_PET_ID) {
                 const footer = interaction.message.embeds[0].footer.text;
                 let index = parseInt(footer.match(/\d+/)[0]) - 1;
+                const petToRemove = activeListings[index];
+
+                // SECURITY CHECK: Ang seller lang ang pwedeng mag-delete
+                if (petToRemove.sellerId && interaction.user.id !== petToRemove.sellerId) {
+                    return await interaction.reply({ 
+                        content: "❌ **Error:** Hindi mo pwedeng tanggalin ang listing na ito dahil hindi ikaw ang seller.", 
+                        ephemeral: true 
+                    });
+                }
+
+                if (!interaction.deferred && !interaction.replied) await interaction.deferUpdate();
                 activeListings.splice(index, 1);
                 return await interaction.editReply(activeListings.length > 0 ? createActiveListingPage(0) : createEmptyHelp());
             }
