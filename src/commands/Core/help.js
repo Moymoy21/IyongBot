@@ -1,31 +1,28 @@
 import { SlashCommandBuilder } from "discord.js";
 import { InteractionHelper } from '../../utils/interactionHelper.js';
-import { createPetPage } from '../../handlers/helpSelectMenus.js'; // Import natin ang pet page logic
+import { createEmptyHelp, createActiveListingPage, activeListings } from '../../handlers/helpSelectMenus.js';
 
 export default {
     data: new SlashCommandBuilder()
         .setName("help")
-        .setDescription("Manage and view your pet listings"),
+        .setDescription("View your active pet listings"),
 
     async execute(interaction, guildConfig, client) {
-        // Gamitin ang safeDefer para hindi mag-timeout habang naglo-load
         await InteractionHelper.safeDefer(interaction);
         
         try {
-            // Dito natin tatawagin ang createPetPage(0) para Dilophosaurus (Page 1) agad ang lumabas
-            const { embeds, components } = createPetPage(0);
+            // Check kung may laman ang listings
+            const response = activeListings.length > 0 
+                ? createActiveListingPage(0) 
+                : createEmptyHelp();
             
             await InteractionHelper.safeEditReply(interaction, {
-                embeds,
-                components,
+                embeds: response.embeds,
+                components: response.components,
             });
         } catch (error) {
-            console.error("Help Command Error:", error);
-            await InteractionHelper.safeEditReply(interaction, {
-                content: "Error loading listings. Make sure helpSelectMenus.js is updated.",
-                embeds: [],
-                components: []
-            });
+            console.error(error);
+            await InteractionHelper.safeEditReply(interaction, { content: "Error loading listings." });
         }
     },
 };
