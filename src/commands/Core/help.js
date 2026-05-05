@@ -1,129 +1,28 @@
-import {
-    SlashCommandBuilder,
-    ActionRowBuilder,
-    ButtonBuilder,
-    ButtonStyle,
-} from "discord.js";
+import { SlashCommandBuilder } from "discord.js";
 import { InteractionHelper } from '../../utils/interactionHelper.js';
-import { createEmbed } from "../../utils/embeds.js";
-import { createSelectMenu } from "../../utils/components.js";
-import fs from "fs/promises";
-import path from "path";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const CATEGORY_SELECT_ID = "help-category-select";
-const ALL_COMMANDS_ID = "help-all-commands";
-
-const CATEGORY_ICONS = {
-    Economy: "💰",
-    Createboot: "🛍️",
-    Core: "⚙️",
-    Community: "👥",
-    Birthday: "🎂",
-    Fun: "🎮",
-    Utility: "🛠️"
-};
-
-export async function createInitialHelpMenu(client) {
-    let categoryDirs = [];
-    try {
-        const commandsPath = path.join(__dirname, "../../commands");
-        categoryDirs = (await fs.readdir(commandsPath, { withFileTypes: true }))
-            .filter((dirent) => dirent.isDirectory())
-            .map((dirent) => dirent.name)
-            .sort();
-    } catch (e) {
-        console.error("Error reading commands directory:", e);
-    }
-
-    const options = [
-        {
-            label: "📋 All Commands",
-            description: "View all available commands",
-            value: ALL_COMMANDS_ID,
-        },
-        ...categoryDirs.map((category) => {
-            const displayName = category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
-            const icon = CATEGORY_ICONS[displayName] || "🔍";
-            return {
-                label: `${icon} ${displayName}`,
-                description: `Commands in ${displayName}`,
-                value: category, // Panatilihing original casing para sa ibang folders
-            };
-        }),
-    ];
-
-    // --- ITO ANG KRITIKAL NA PART ---
-    // Dahil binura mo na ang folder, i-force natin ang "Createboot" option dito
-    // Siguraduhin na ang value ay 'createboot' (lowercase) para mahuli ng handler shortcut
-    const hasCreateBoot = options.some(opt => opt.value.toLowerCase() === 'createboot');
-    if (!hasCreateBoot) {
-        options.push({
-            label: "🛍️ Createboot",
-            description: "View and Edit Pets (Dilophosaurus & more)",
-            value: "createboot" // <--- Ito ang match sa handler!
-        });
-    }
-
-    const embed = createEmbed({ 
-        title: `${client?.user?.username || "Bot"} Help Center`,
-        description: "Your all-in-one Discord companion for economy and management.",
-        color: 'primary'
-    });
-
-    embed.addFields({
-        name: "🛍️ **Create a Trading Boot**",
-        value: "Show what you are selling or stocks\n\n" +
-               "> `/MyBoot` - Check your own boot\n" +
-               "> `/CreateListing` - Add items to sell\n" +
-               "> `/PlayerBoot <username>` - Search for other player's boot",
-        inline: false
-    });
-
-    // Ang footer mo na "Iyong Official"
-    embed.setFooter({ text: "Made with Iyong Official" });
-    embed.setTimestamp();
-
-    const bugReportButton = new ButtonBuilder()
-        .setLabel('Report Bug')
-        .setStyle(ButtonStyle.Link)
-        .setURL('https://discord.gg/yourlink'); 
-
-    const selectRow = createSelectMenu(
-        CATEGORY_SELECT_ID,
-        "Select a category",
-        options,
-    );
-
-    const buttonRow = new ActionRowBuilder().addComponents(bugReportButton);
-
-    return {
-        embeds: [embed],
-        components: [buttonRow, selectRow],
-    };
-}
+import { createPetPage } from '../../handlers/helpSelectMenus.js'; // Import natin ang pet page logic
 
 export default {
     data: new SlashCommandBuilder()
         .setName("help")
-        .setDescription("Displays the help menu"),
+        .setDescription("Manage and view your pet listings"),
 
     async execute(interaction, guildConfig, client) {
+        // Gamitin ang safeDefer para hindi mag-timeout habang naglo-load
         await InteractionHelper.safeDefer(interaction);
         
         try {
-            const { embeds, components } = await createInitialHelpMenu(client);
+            // Dito natin tatawagin ang createPetPage(0) para Dilophosaurus (Page 1) agad ang lumabas
+            const { embeds, components } = createPetPage(0);
+            
             await InteractionHelper.safeEditReply(interaction, {
                 embeds,
                 components,
             });
         } catch (error) {
-            console.error(error);
+            console.error("Help Command Error:", error);
             await InteractionHelper.safeEditReply(interaction, {
-                content: "May error sa pag-load ng help menu.",
+                content: "Error loading listings. Make sure helpSelectMenus.js is updated.",
                 embeds: [],
                 components: []
             });
