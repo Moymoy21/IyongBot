@@ -2,9 +2,9 @@ import { createEmbed } from '../utils/embeds.js';
 import { createButton } from '../utils/components.js';
 import { ActionRowBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, StringSelectMenuBuilder } from 'discord.js';
 
-const NEXT_PET_ID = "pet_next_action";
-const PREV_PET_ID = "pet_prev_action";
-const REMOVE_PET_ID = "pet_remove_action";
+export const NEXT_PET_ID = "pet_next_action";
+export const PREV_PET_ID = "pet_prev_action";
+export const REMOVE_PET_ID = "pet_remove_action";
 
 export const ALL_AVAILABLE_PETS = [
     { name: "Dilophosaurus", url: "https://static.wikia.nocookie.net/growagarden/images/3/3c/Dilophosaurus.png" },
@@ -14,10 +14,9 @@ export const ALL_AVAILABLE_PETS = [
 
 export let activeListings = []; 
 
-// --- ITO ANG NAWAWALA KAYA NAG-ERROR SA LOGS ---
+// ITO ANG IMPORTANTE: Dapat may 'export' function
 export function createPetPage(index) {
     if (activeListings.length === 0) return createEmptyHelp();
-
     const pet = activeListings[index];
     const embed = createEmbed({ 
         title: `🏪 Active Listing: ${pet.name}`, 
@@ -32,7 +31,6 @@ export function createPetPage(index) {
         createButton(NEXT_PET_ID, "Next", "secondary", "➡️", index === activeListings.length - 1),
         createButton(REMOVE_PET_ID, "Remove Listing", "danger", "🗑️", false)
     );
-
     return { embeds: [embed], components: [navRow, createCategoryMenu()] };
 }
 
@@ -64,7 +62,6 @@ export const helpCategorySelectMenu = {
     async execute(interaction, client) {
         try {
             const { customId, values } = interaction;
-
             if (interaction.isStringSelectMenu() && values[0].startsWith('list_this_')) {
                 const petName = values[0].replace('list_this_', '');
                 const modal = new ModalBuilder().setCustomId(`submit_listing_${petName}`).setTitle(`Listing Details: ${petName}`);
@@ -77,16 +74,13 @@ export const helpCategorySelectMenu = {
                 modal.addComponents(...rows);
                 return await interaction.showModal(modal);
             }
-
             if (!interaction.deferred && !interaction.replied) await interaction.deferUpdate();
-
             if (customId === NEXT_PET_ID || customId === PREV_PET_ID) {
                 const footer = interaction.message.embeds[0].footer.text;
                 let index = parseInt(footer.match(/\d+/)[0]) - 1;
                 index = (customId === NEXT_PET_ID) ? index + 1 : index - 1;
                 return await interaction.editReply(createPetPage(index));
             }
-
             if (customId === REMOVE_PET_ID) {
                 const footer = interaction.message.embeds[0].footer.text;
                 let index = parseInt(footer.match(/\d+/)[0]) - 1;
