@@ -34,24 +34,63 @@ export const helpCategorySelectMenu = {
         try {
             const { customId } = interaction;
 
-            // 1. MODAL (CREATE LISTING) - Triggered before defer
             if (customId === LISTING_PET_ID) {
                 const footer = interaction.message.embeds[0].footer.text;
                 const index = parseInt(footer.match(/\d+/)[0]) - 1;
-                const modal = new ModalBuilder().setCustomId(`listing_modal_${index}`).setTitle(`Listing: ${PET_IMAGES[index].name}`);
-                modal.addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('price').setLabel("Price").setStyle(TextInputStyle.Short).setRequired(true)));
+                
+                const modal = new ModalBuilder()
+                    .setCustomId(`listing_modal_${index}`)
+                    .setTitle(`Listing: ${PET_IMAGES[index].name}`);
+
+                // 1. Pet Mutation
+                const mutationInput = new TextInputBuilder()
+                    .setCustomId('mutation')
+                    .setLabel("Pet Mutation")
+                    .setPlaceholder("e.g. Neon, Mega, etc.")
+                    .setStyle(TextInputStyle.Short)
+                    .setRequired(true);
+
+                // 2. Pet Age
+                const ageInput = new TextInputBuilder()
+                    .setCustomId('age')
+                    .setLabel("Pet Age")
+                    .setPlaceholder("e.g. Adult, Full Grown")
+                    .setStyle(TextInputStyle.Short)
+                    .setRequired(true);
+
+                // 3. Pet Weight
+                const weightInput = new TextInputBuilder()
+                    .setCustomId('weight')
+                    .setLabel("Pet Weight")
+                    .setPlaceholder("e.g. 10kg")
+                    .setStyle(TextInputStyle.Short)
+                    .setRequired(true);
+
+                // 4. Token Price
+                const priceInput = new TextInputBuilder()
+                    .setCustomId('price')
+                    .setLabel("Token Price")
+                    .setPlaceholder("Amount of tokens")
+                    .setStyle(TextInputStyle.Short)
+                    .setRequired(true);
+
+                // Isang ActionRow bawat isang TextInput
+                const row1 = new ActionRowBuilder().addComponents(mutationInput);
+                const row2 = new ActionRowBuilder().addComponents(ageInput);
+                const row3 = new ActionRowBuilder().addComponents(weightInput);
+                const row4 = new ActionRowBuilder().addComponents(priceInput);
+
+                modal.addComponents(row1, row2, row3, row4);
+                
                 return await interaction.showModal(modal);
             }
 
-            // 2. DEFER UPDATE (For buttons and menus)
             if (!interaction.deferred && !interaction.replied) await interaction.deferUpdate();
 
-            // 3. SELECT MENU LOGIC
             if (interaction.isStringSelectMenu() && interaction.values[0] === 'createboot') {
                 return await interaction.editReply(createPetPage(0));
             }
 
-            // 4. NAVIGATION LOGIC (STATIC IDS)
             if (customId === NEXT_PET_ID || customId === PREV_PET_ID) {
                 const footer = interaction.message.embeds[0].footer.text;
                 let index = parseInt(footer.match(/\d+/)[0]) - 1;
@@ -59,16 +98,15 @@ export const helpCategorySelectMenu = {
                 return await interaction.editReply(createPetPage(index));
             }
 
-            // 5. BACK BUTTON
             if (customId === BACK_BUTTON_ID) {
-                return await interaction.editReply({ content: "🏠 Menu reset. Type `/help` again.", embeds: [], components: [] });
+                return await interaction.editReply({ content: "🏠 Menu reset.", embeds: [], components: [] });
             }
         } catch (e) { console.error('[DEBUG ERROR]', e); }
     }
 };
 
-// EXPORTS PARA SA INTERACTION LOADER
 export const petNext = { name: NEXT_PET_ID, execute: helpCategorySelectMenu.execute };
 export const petPrev = { name: PREV_PET_ID, execute: helpCategorySelectMenu.execute };
 export const petList = { name: LISTING_PET_ID, execute: helpCategorySelectMenu.execute };
 export const helpBack = { name: BACK_BUTTON_ID, execute: helpCategorySelectMenu.execute };
+
