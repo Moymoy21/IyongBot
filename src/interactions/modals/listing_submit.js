@@ -1,6 +1,6 @@
 import { activeListings, ALL_AVAILABLE_PETS, createActiveListingPage } from '../../handlers/helpSelectMenus.js';
 
-export const listingSubmit = {
+export default {
     name: "submit_listing", 
     async execute(interaction, client) {
         try {
@@ -17,12 +17,10 @@ export const listingSubmit = {
             };
 
             activeListings.push(newListing);
-            
-            // DITO SYA NAG-EERROR DATI KASI HINDI MATCH ANG PANGALAN
             const updatedView = createActiveListingPage(activeListings.length - 1);
             
             await interaction.reply({ 
-                content: `✅ Listed: **${petName}**!`, 
+                content: `✅ Success! Na-list na ang **${petName}**.`, 
                 ephemeral: true 
             });
 
@@ -34,5 +32,3 @@ export const listingSubmit = {
         }
     }
 };
-
-export default listingSubmit;
