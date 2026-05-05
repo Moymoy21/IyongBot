@@ -1,4 +1,10 @@
-// Inalis na ang mga imports mula sa helpButtons.js dahil pinagsama na ang logic sa helpSelectMenus.js
-// Pinananatiling empty array ang export para hindi mag-error ang handler loader ng bot.
+import { helpCategorySelectMenu, petNext, petPrev, petList, helpBack } from '../../handlers/helpSelectMenus.js';
 
-export default [];
+// Binabalot nito ang lahat ng help buttons para ma-register sila sa Railway
+export default [
+    helpCategorySelectMenu,
+    petNext,
+    petPrev,
+    petList,
+    helpBack
+];
