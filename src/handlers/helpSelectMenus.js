@@ -4,32 +4,18 @@ import { ActionRowBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, Strin
 
 const NEXT_PET_ID = "pet_next_action";
 const PREV_PET_ID = "pet_prev_action";
-const LISTING_PET_ID = "pet_listing_action";
 const REMOVE_PET_ID = "pet_remove_action";
 
-// Listahan ng lahat ng pwedeng i-list (A-Z)
-const ALL_AVAILABLE_PETS = [
+// 1. DAPAT MAY 'EXPORT' NA AGAD DITO
+export const ALL_AVAILABLE_PETS = [
     { name: "Dilophosaurus", url: "https://static.wikia.nocookie.net/growagarden/images/3/3c/Dilophosaurus.png" },
     { name: "Kitsune", url: "https://static.wikia.nocookie.net/growagarden/images/0/04/Kitsune.png" },
     { name: "Peryton", url: "https://static.wikia.nocookie.net/growagarden/images/2/26/PerytonPet.png" }
 ].sort((a, b) => a.name.localeCompare(b.name));
 
-// Dito mai-store ang active listings (Temporary)
-let activeListings = []; 
+// 2. DAPAT MAY 'EXPORT' NA AGAD DITO PARA MA-ACCESS NG MODAL HANDLER
+export let activeListings = []; 
 
-// Function para sa Empty State
-export function createEmptyHelp() {
-    const embed = createEmbed({
-        title: "🏪 Your Active Listings",
-        description: "You don't have any active pet listings yet.\n\nUse the menu below to select a pet and start listing!",
-        color: 'primary'
-    });
-    embed.setFooter({ text: "Made with Iyong Official" });
-
-    return { embeds: [embed], components: [createCategoryMenu()] };
-}
-
-// Function para sa Menu (A-Z List)
 const createCategoryMenu = () => {
     return new ActionRowBuilder().addComponents(
         new StringSelectMenuBuilder()
@@ -43,7 +29,16 @@ const createCategoryMenu = () => {
     );
 };
 
-// Function para sa Active Listing View
+export function createEmptyHelp() {
+    const embed = createEmbed({
+        title: "🏪 Your Active Listings",
+        description: "You don't have any active pet listings yet.\n\nUse the menu below to select a pet and start listing!",
+        color: 'primary'
+    });
+    embed.setFooter({ text: "Made with Iyong Official" });
+    return { embeds: [embed], components: [createCategoryMenu()] };
+}
+
 export function createActiveListingPage(index) {
     if (activeListings.length === 0) return createEmptyHelp();
 
@@ -71,11 +66,9 @@ export const helpCategorySelectMenu = {
         try {
             const { customId, values } = interaction;
 
-            // 1. SELECT PET FROM MENU
             if (interaction.isStringSelectMenu() && values[0].startsWith('list_this_')) {
                 const petName = values[0].replace('list_this_', '');
-                const petData = ALL_AVAILABLE_PETS.find(p => p.name === petName);
-
+                
                 const modal = new ModalBuilder()
                     .setCustomId(`submit_listing_${petName}`)
                     .setTitle(`Listing Details: ${petName}`);
@@ -93,7 +86,6 @@ export const helpCategorySelectMenu = {
 
             if (!interaction.deferred && !interaction.replied) await interaction.deferUpdate();
 
-            // 2. NAVIGATION
             if (customId === NEXT_PET_ID || customId === PREV_PET_ID) {
                 const footer = interaction.message.embeds[0].footer.text;
                 let index = parseInt(footer.match(/\d+/)[0]) - 1;
@@ -101,20 +93,17 @@ export const helpCategorySelectMenu = {
                 return await interaction.editReply(createActiveListingPage(index));
             }
 
-            // 3. REMOVE
             if (customId === REMOVE_PET_ID) {
                 const footer = interaction.message.embeds[0].footer.text;
                 let index = parseInt(footer.match(/\d+/)[0]) - 1;
-                activeListings.splice(index, 1); // Delete from array
+                activeListings.splice(index, 1);
                 return await interaction.editReply(activeListings.length > 0 ? createActiveListingPage(0) : createEmptyHelp());
             }
-
         } catch (e) { console.error(e); }
     }
 };
 
-// Export activeListings para ma-access ng modal handler
-export { activeListings, ALL_AVAILABLE_PETS };
+// Aliases para sa loader
 export const petNext = { name: NEXT_PET_ID, execute: helpCategorySelectMenu.execute };
 export const petPrev = { name: PREV_PET_ID, execute: helpCategorySelectMenu.execute };
 export const petRemove = { name: REMOVE_PET_ID, execute: helpCategorySelectMenu.execute };
