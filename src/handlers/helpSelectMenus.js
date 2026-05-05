@@ -64,6 +64,19 @@ export const helpCategorySelectMenu = {
         try {
             const { customId, values } = interaction;
 
+            // --- USER RESTRICTION START ---
+            // Tinitingnan kung ang gumagamit ng menu/buttons ay ang mismong nag-trigger ng /help
+            // Gagamitin natin ang interaction.message.interaction.user.id para malaman ang original author
+            const originalAuthorId = interaction.message.interaction?.user?.id;
+            
+            if (originalAuthorId && interaction.user.id !== originalAuthorId) {
+                return await interaction.reply({ 
+                    content: "❌ **Bawal makialam:** Ang taong nag-type lang ng `/help` ang pwedeng gumamit ng menu na ito.", 
+                    ephemeral: true 
+                });
+            }
+            // --- USER RESTRICTION END ---
+
             if (interaction.isStringSelectMenu() && values[0].startsWith('list_this_')) {
                 const petName = values[0].replace('list_this_', '');
                 const modal = new ModalBuilder().setCustomId(`submit_listing_${petName}`).setTitle(`Listing Details: ${petName}`);
@@ -90,7 +103,6 @@ export const helpCategorySelectMenu = {
                 let index = parseInt(footer.match(/\d+/)[0]) - 1;
                 const petToRemove = activeListings[index];
 
-                // SECURITY CHECK: Ang seller lang ang pwedeng mag-delete
                 if (petToRemove.sellerId && interaction.user.id !== petToRemove.sellerId) {
                     return await interaction.reply({ 
                         content: "❌ **Error:** Hindi mo pwedeng tanggalin ang listing na ito dahil hindi ikaw ang seller.", 
