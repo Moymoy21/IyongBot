@@ -1,7 +1,7 @@
 import { activeListings, ALL_AVAILABLE_PETS, createActiveListingPage } from '../../handlers/helpSelectMenus.js';
 
 export const listingSubmit = {
-    name: "submit_listing", // Siguraduhin na ito ang prefix match
+    name: "submit_listing", 
     async execute(interaction, client) {
         try {
             const petName = interaction.customId.replace('submit_listing_', '');
@@ -17,11 +17,12 @@ export const listingSubmit = {
             };
 
             activeListings.push(newListing);
+            
+            // DITO SYA NAG-EERROR DATI KASI HINDI MATCH ANG PANGALAN
             const updatedView = createActiveListingPage(activeListings.length - 1);
             
-            // Mahalaga: Kailangan ng reply bago ang anumang edit
             await interaction.reply({ 
-                content: `✅ Success! Na-list na ang **${petName}**.`, 
+                content: `✅ Listed: **${petName}**!`, 
                 ephemeral: true 
             });
 
@@ -29,7 +30,7 @@ export const listingSubmit = {
                 await interaction.message.edit(updatedView);
             }
         } catch (error) {
-            console.error('[MODAL SUBMIT ERROR]', error);
+            console.error('[MODAL ERROR]', error);
         }
     }
 };
