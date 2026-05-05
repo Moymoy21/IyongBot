@@ -14,9 +14,19 @@ export const ALL_AVAILABLE_PETS = [
 
 export let activeListings = []; 
 
-// ITO ANG IMPORTANTE: Dapat may 'export' function
-export function createPetPage(index) {
+export function createEmptyHelp() {
+    const embed = createEmbed({
+        title: "🏪 Your Active Listings",
+        description: "You don't have any active pet listings yet.\n\nUse the menu below to select a pet and start listing!",
+        color: 'primary'
+    });
+    embed.setFooter({ text: "Made with Iyong Official" });
+    return { embeds: [embed], components: [createCategoryMenu()] };
+}
+
+export function createActiveListingPage(index) {
     if (activeListings.length === 0) return createEmptyHelp();
+
     const pet = activeListings[index];
     const embed = createEmbed({ 
         title: `🏪 Active Listing: ${pet.name}`, 
@@ -31,17 +41,8 @@ export function createPetPage(index) {
         createButton(NEXT_PET_ID, "Next", "secondary", "➡️", index === activeListings.length - 1),
         createButton(REMOVE_PET_ID, "Remove Listing", "danger", "🗑️", false)
     );
-    return { embeds: [embed], components: [navRow, createCategoryMenu()] };
-}
 
-export function createEmptyHelp() {
-    const embed = createEmbed({
-        title: "🏪 Your Active Listings",
-        description: "You don't have any active pet listings yet.\n\nUse the menu below to select a pet and start listing!",
-        color: 'primary'
-    });
-    embed.setFooter({ text: "Made with Iyong Official" });
-    return { embeds: [embed], components: [createCategoryMenu()] };
+    return { embeds: [embed], components: [navRow, createCategoryMenu()] };
 }
 
 const createCategoryMenu = () => {
@@ -62,6 +63,7 @@ export const helpCategorySelectMenu = {
     async execute(interaction, client) {
         try {
             const { customId, values } = interaction;
+
             if (interaction.isStringSelectMenu() && values[0].startsWith('list_this_')) {
                 const petName = values[0].replace('list_this_', '');
                 const modal = new ModalBuilder().setCustomId(`submit_listing_${petName}`).setTitle(`Listing Details: ${petName}`);
@@ -74,18 +76,21 @@ export const helpCategorySelectMenu = {
                 modal.addComponents(...rows);
                 return await interaction.showModal(modal);
             }
+
             if (!interaction.deferred && !interaction.replied) await interaction.deferUpdate();
+
             if (customId === NEXT_PET_ID || customId === PREV_PET_ID) {
                 const footer = interaction.message.embeds[0].footer.text;
                 let index = parseInt(footer.match(/\d+/)[0]) - 1;
                 index = (customId === NEXT_PET_ID) ? index + 1 : index - 1;
-                return await interaction.editReply(createPetPage(index));
+                return await interaction.editReply(createActiveListingPage(index));
             }
+
             if (customId === REMOVE_PET_ID) {
                 const footer = interaction.message.embeds[0].footer.text;
                 let index = parseInt(footer.match(/\d+/)[0]) - 1;
                 activeListings.splice(index, 1);
-                return await interaction.editReply(activeListings.length > 0 ? createPetPage(0) : createEmptyHelp());
+                return await interaction.editReply(activeListings.length > 0 ? createActiveListingPage(0) : createEmptyHelp());
             }
         } catch (e) { console.error(e); }
     }
