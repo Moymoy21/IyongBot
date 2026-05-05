@@ -10,12 +10,14 @@ export default {
     async execute(interaction, guildConfig, client) {
         try {
             await InteractionHelper.safeDefer(interaction);
+            
             const response = (activeListings && activeListings.length > 0) 
                 ? createActiveListingPage(0) 
                 : createEmptyHelp();
+            
             await InteractionHelper.safeEditReply(interaction, response);
         } catch (error) {
-            console.error(error);
+            console.error('[HELP COMMAND ERROR]', error);
         }
     },
 };
