@@ -1,11 +1,12 @@
 import { createEmbed } from '../utils/embeds.js';
 import { createButton } from '../utils/components.js';
-import { ActionRowBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } from 'discord.js';
+import { ActionRowBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, StringSelectMenuBuilder } from 'discord.js';
 
 const BACK_BUTTON_ID = "help-back-to-main";
 const NEXT_PET_ID = "pet_next_action";
 const PREV_PET_ID = "pet_prev_action";
 const LISTING_PET_ID = "pet_listing_action";
+const REMOVE_PET_ID = "pet_remove_action";
 
 const PET_IMAGES = [
     { name: "Dilophosaurus", url: "https://static.wikia.nocookie.net/growagarden/images/3/3c/Dilophosaurus.png/revision/latest?cb=20250712071322" },
@@ -13,19 +14,37 @@ const PET_IMAGES = [
     { name: "Kitsune", url: "https://static.wikia.nocookie.net/growagarden/images/0/04/Kitsune.png/revision/latest?cb=20250918145223" }
 ];
 
+// Reusable Menu para sa lahat ng pages
+const createCategoryMenu = () => {
+    return new ActionRowBuilder().addComponents(
+        new StringSelectMenuBuilder()
+            .setCustomId('help-category-select')
+            .setPlaceholder('Select a category to add pets...')
+            .addOptions([
+                { label: 'Createboot (Add Pet)', value: 'createboot', emoji: '🛍️' },
+                { label: 'Economy', value: 'economy', emoji: '💰' }
+            ])
+    );
+};
+
 export function createPetPage(index) {
     const pet = PET_IMAGES[index];
-    const embed = createEmbed({ title: `🐾 ${pet.name}`, color: 'primary' });
+    const embed = createEmbed({ 
+        title: `🏪 Active Listing: ${pet.name}`, 
+        description: "Manage your listed pets below.",
+        color: 'primary' 
+    });
     embed.setImage(pet.url);
     embed.setFooter({ text: `Page ${index + 1} of ${PET_IMAGES.length} | Made with Iyong Official` });
 
-    const row = new ActionRowBuilder().addComponents(
+    const navRow = new ActionRowBuilder().addComponents(
         createButton(PREV_PET_ID, "Prev", "secondary", "⬅️", index === 0),
         createButton(NEXT_PET_ID, "Next", "secondary", "➡️", index === PET_IMAGES.length - 1),
-        createButton(LISTING_PET_ID, "Create Listing", "success", "🛍️", false),
-        createButton(BACK_BUTTON_ID, "Back", "primary", "🏠", false)
+        createButton(LISTING_PET_ID, "Add Pet", "success", "➕", false),
+        createButton(REMOVE_PET_ID, "Remove", "danger", "🗑️", false)
     );
-    return { embeds: [embed], components: [row] };
+
+    return { embeds: [embed], components: [navRow, createCategoryMenu()] };
 }
 
 export const helpCategorySelectMenu = {
@@ -34,59 +53,31 @@ export const helpCategorySelectMenu = {
         try {
             const { customId } = interaction;
 
+            // 1. MODAL (CREATE LISTING)
             if (customId === LISTING_PET_ID) {
                 const footer = interaction.message.embeds[0].footer.text;
                 const index = parseInt(footer.match(/\d+/)[0]) - 1;
+                const modal = new ModalBuilder().setCustomId(`listing_modal_${index}`).setTitle(`Listing: ${PET_IMAGES[index].name}`);
                 
-                const modal = new ModalBuilder()
-                    .setCustomId(`listing_modal_${index}`)
-                    .setTitle(`Listing: ${PET_IMAGES[index].name}`);
+                const rows = [
+                    new TextInputBuilder().setCustomId('mutation').setLabel("Pet Mutation").setStyle(TextInputStyle.Short).setRequired(true),
+                    new TextInputBuilder().setCustomId('age').setLabel("Pet Age").setStyle(TextInputStyle.Short).setRequired(true),
+                    new TextInputBuilder().setCustomId('weight').setLabel("Pet Weight").setStyle(TextInputStyle.Short).setRequired(true),
+                    new TextInputBuilder().setCustomId('price').setLabel("Token Price").setStyle(TextInputStyle.Short).setRequired(true)
+                ].map(input => new ActionRowBuilder().addComponents(input));
 
-                // 1. Pet Mutation
-                const mutationInput = new TextInputBuilder()
-                    .setCustomId('mutation')
-                    .setLabel("Pet Mutation")
-                    .setPlaceholder("e.g. Neon, Mega, etc.")
-                    .setStyle(TextInputStyle.Short)
-                    .setRequired(true);
-
-                // 2. Pet Age
-                const ageInput = new TextInputBuilder()
-                    .setCustomId('age')
-                    .setLabel("Pet Age")
-                    .setPlaceholder("e.g. Adult, Full Grown")
-                    .setStyle(TextInputStyle.Short)
-                    .setRequired(true);
-
-                // 3. Pet Weight
-                const weightInput = new TextInputBuilder()
-                    .setCustomId('weight')
-                    .setLabel("Pet Weight")
-                    .setPlaceholder("e.g. 10kg")
-                    .setStyle(TextInputStyle.Short)
-                    .setRequired(true);
-
-                // 4. Token Price
-                const priceInput = new TextInputBuilder()
-                    .setCustomId('price')
-                    .setLabel("Token Price")
-                    .setPlaceholder("Amount of tokens")
-                    .setStyle(TextInputStyle.Short)
-                    .setRequired(true);
-
-                // Isang ActionRow bawat isang TextInput
-                const row1 = new ActionRowBuilder().addComponents(mutationInput);
-                const row2 = new ActionRowBuilder().addComponents(ageInput);
-                const row3 = new ActionRowBuilder().addComponents(weightInput);
-                const row4 = new ActionRowBuilder().addComponents(priceInput);
-
-                modal.addComponents(row1, row2, row3, row4);
-                
+                modal.addComponents(...rows);
                 return await interaction.showModal(modal);
             }
 
             if (!interaction.deferred && !interaction.replied) await interaction.deferUpdate();
 
+            // 2. REMOVE LOGIC
+            if (customId === REMOVE_PET_ID) {
+                return await interaction.editReply({ content: "⚠️ Pet has been removed from listing!", embeds: [], components: [createCategoryMenu()] });
+            }
+
+            // 3. NAVIGATION & CATEGORY SELECT
             if (interaction.isStringSelectMenu() && interaction.values[0] === 'createboot') {
                 return await interaction.editReply(createPetPage(0));
             }
@@ -97,16 +88,11 @@ export const helpCategorySelectMenu = {
                 index = (customId === NEXT_PET_ID) ? index + 1 : index - 1;
                 return await interaction.editReply(createPetPage(index));
             }
-
-            if (customId === BACK_BUTTON_ID) {
-                return await interaction.editReply({ content: "🏠 Menu reset.", embeds: [], components: [] });
-            }
-        } catch (e) { console.error('[DEBUG ERROR]', e); }
+        } catch (e) { console.error(e); }
     }
 };
 
 export const petNext = { name: NEXT_PET_ID, execute: helpCategorySelectMenu.execute };
 export const petPrev = { name: PREV_PET_ID, execute: helpCategorySelectMenu.execute };
 export const petList = { name: LISTING_PET_ID, execute: helpCategorySelectMenu.execute };
-export const helpBack = { name: BACK_BUTTON_ID, execute: helpCategorySelectMenu.execute };
-
+export const petRemove = { name: REMOVE_PET_ID, execute: helpCategorySelectMenu.execute };
