@@ -1,10 +1,9 @@
-import { helpCategorySelectMenu, petNext, petPrev, petList, helpBack } from '../../handlers/helpSelectMenus.js';
+import { helpCategorySelectMenu, petNext, petPrev, petRemove } from '../../handlers/helpSelectMenus.js';
 
-// Binabalot nito ang lahat ng help buttons para ma-register sila sa Railway
+// Siguraduhin na ang mga exported names dito ay match sa exports ng helpSelectMenus.js
 export default [
     helpCategorySelectMenu,
     petNext,
     petPrev,
-    petList,
-    helpBack
+    petRemove
 ];
